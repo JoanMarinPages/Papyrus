@@ -4,7 +4,8 @@
       "mcp__brave-search__brave_web_search",
       "WebSearch",
       "Bash(find /c/Users/joanm/Downloads/papyrusPP -name tailwind.config.* -o -name *.tailwind.*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(pnpm next:*)"
     ]
   }
 }
