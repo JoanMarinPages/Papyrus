@@ -4,3 +4,9 @@ dist/
 *.local
 tsconfig.tsbuildinfo
 .next/
+
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+*.egg-info/
