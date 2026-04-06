@@ -5,7 +5,25 @@
       "WebSearch",
       "Bash(find /c/Users/joanm/Downloads/papyrusPP -name tailwind.config.* -o -name *.tailwind.*)",
       "Bash(pnpm install:*)",
-      "Bash(pnpm next:*)"
+      "Bash(pnpm next:*)",
+      "Bash(cp -r components/dashboard src/components/)",
+      "Bash(cp -r components/ui src/components/)",
+      "Bash(cp components/theme-provider.tsx src/components/)",
+      "Bash(cp -r hooks/* src/hooks/)",
+      "Bash(cp -r lib/* src/lib/)",
+      "Bash(cp app/page.tsx src/pages/Dashboard.tsx)",
+      "Bash(cp app/documents/page.tsx src/pages/Documents.tsx)",
+      "Bash(cp app/upload/page.tsx src/pages/Upload.tsx)",
+      "Bash(cp app/graph/page.tsx src/pages/Graph.tsx)",
+      "Bash(cp app/analytics/page.tsx src/pages/Analytics.tsx)",
+      "Bash(for f:*)",
+      "Bash(do sed:*)",
+      "Bash(echo \"Cleaned $f\")",
+      "Bash(done)",
+      "Bash(rm -rf app/ components/ hooks/ lib/ styles/ .next/)",
+      "Bash(rm -f next.config.mjs next-env.d.ts postcss.config.mjs components.json)",
+      "Bash(npx tsc:*)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
