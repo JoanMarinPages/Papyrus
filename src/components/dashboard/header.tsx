@@ -1,4 +1,3 @@
-"use client"
 
 import { Bell, Search, HelpCircle, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"

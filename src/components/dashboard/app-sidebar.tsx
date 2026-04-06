@@ -1,7 +1,4 @@
-"use client"
-
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Link, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
   FileText,
@@ -68,7 +65,7 @@ const configNav = [
 ]
 
 export function AppSidebar() {
-  const pathname = usePathname()
+  const { pathname } = useLocation()
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-border bg-sidebar">
@@ -105,7 +102,7 @@ export function AppSidebar() {
           {mainNav.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 pathname === item.href
@@ -127,7 +124,7 @@ export function AppSidebar() {
             {configNav.map((item) => (
               <Link
                 key={item.href}
-                href={item.href}
+                to={item.href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                   pathname === item.href

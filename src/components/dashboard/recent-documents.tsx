@@ -1,4 +1,3 @@
-"use client"
 
 import { FileText, MoreHorizontal, Clock, CheckCircle2, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

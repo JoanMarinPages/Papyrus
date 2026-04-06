@@ -1,4 +1,3 @@
-"use client"
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { Header } from "@/components/dashboard/header"

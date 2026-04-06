@@ -1,4 +1,3 @@
-"use client"
 
 import { FileText, Network, Zap, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
