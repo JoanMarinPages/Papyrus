@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Building2,
   Package,
+  CalendarDays,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -44,6 +45,11 @@ const mainNav = [
     title: "Envios",
     href: "/shipments",
     icon: Package,
+  },
+  {
+    title: "Calendario",
+    href: "/schedule",
+    icon: CalendarDays,
   },
 ]
 
