@@ -11,6 +11,7 @@ import Analytics from "@/pages/Analytics";
 import Templates from "@/pages/Templates";
 import ApiKeys from "@/pages/ApiKeys";
 import Settings from "@/pages/Settings";
+import Shipments from "@/pages/Shipments";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
       <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
       <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
       <Route path="/graph" element={<ProtectedRoute><Graph /></ProtectedRoute>} />
+      <Route path="/shipments" element={<ProtectedRoute><Shipments /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
       <Route path="/api-keys" element={<ProtectedRoute><ApiKeys /></ProtectedRoute>} />

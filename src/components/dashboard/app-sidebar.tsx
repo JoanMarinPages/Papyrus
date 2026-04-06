@@ -10,6 +10,7 @@ import {
   Key,
   ChevronDown,
   Building2,
+  Package,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -38,6 +39,11 @@ const mainNav = [
     title: "Knowledge Graph",
     href: "/graph",
     icon: Network,
+  },
+  {
+    title: "Envios",
+    href: "/shipments",
+    icon: Package,
   },
 ]
 
