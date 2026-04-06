@@ -1,7 +1,8 @@
-
+import { useNavigate } from "react-router-dom"
 import { Bell, Search, HelpCircle, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/lib/auth"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,21 @@ interface HeaderProps {
 }
 
 export function Header({ title, description }: HeaderProps) {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate("/")
+  }
+
+  const initials = user?.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "U"
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div>
@@ -62,7 +78,7 @@ export function Header({ title, description }: HeaderProps) {
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/avatar.png" alt="Usuario" />
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  JD
+                  {initials}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -70,9 +86,9 @@ export function Header({ title, description }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">Juan Doe</p>
+                <p className="text-sm font-medium">{user?.name || "Usuario"}</p>
                 <p className="text-xs text-muted-foreground">
-                  juan@miempresa.com
+                  {user?.email || ""}
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -81,8 +97,8 @@ export function Header({ title, description }: HeaderProps) {
             <DropdownMenuItem>Facturación</DropdownMenuItem>
             <DropdownMenuItem>Configuración</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
-              Cerrar sesión
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
+              Cerrar sesion
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

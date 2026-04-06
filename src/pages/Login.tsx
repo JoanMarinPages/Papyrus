@@ -5,23 +5,34 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/lib/auth"
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { login, loginWithGoogle } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // TODO: integrate Supabase Auth
-    setTimeout(() => {
+    setError("")
+    const form = e.target as HTMLFormElement
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value
+    try {
+      await login(email, password)
       navigate("/dashboard")
-    }, 500)
+    } catch {
+      setError("Credenciales incorrectas")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleGoogleLogin = () => {
-    // TODO: integrate Supabase Google OAuth
+  const handleGoogleLogin = async () => {
+    await loginWithGoogle()
     navigate("/dashboard")
   }
 
@@ -46,6 +57,11 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="rounded-xl border border-border bg-card p-8">
+          {error && (
+            <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

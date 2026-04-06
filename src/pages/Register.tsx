@@ -5,23 +5,31 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/lib/auth"
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { register, loginWithGoogle } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // TODO: integrate Supabase Auth
-    setTimeout(() => {
-      navigate("/dashboard")
-    }, 500)
+    const form = e.target as HTMLFormElement
+    await register({
+      firstName: (form.elements.namedItem("firstName") as HTMLInputElement).value,
+      lastName: (form.elements.namedItem("lastName") as HTMLInputElement).value,
+      email: (form.elements.namedItem("email") as HTMLInputElement).value,
+      password: (form.elements.namedItem("password") as HTMLInputElement).value,
+      company: (form.elements.namedItem("company") as HTMLInputElement).value,
+    })
+    setLoading(false)
+    navigate("/dashboard")
   }
 
-  const handleGoogleSignup = () => {
-    // TODO: integrate Supabase Google OAuth
+  const handleGoogleSignup = async () => {
+    await loginWithGoogle()
     navigate("/dashboard")
   }
 
