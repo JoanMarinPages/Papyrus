@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +21,7 @@ import {
   Megaphone,
   BarChart3,
   Shield,
+  Eye,
 } from "lucide-react"
 
 // --- Types ---
@@ -223,6 +225,14 @@ function DayColumn({ day }: { day: DaySchedule }) {
                       <span>{doc.responsible}</span>
                     </div>
                   )}
+                  <Link
+                    to={`/preview?type=${doc.type}`}
+                    className="mt-1.5 flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Eye className="h-3 w-3" />
+                    Ver documento
+                  </Link>
                 </div>
               )}
             </button>

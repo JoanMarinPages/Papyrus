@@ -13,6 +13,7 @@ import ApiKeys from "@/pages/ApiKeys";
 import Settings from "@/pages/Settings";
 import Shipments from "@/pages/Shipments";
 import ScheduleCalendar from "@/pages/ScheduleCalendar";
+import DocumentPreview from "@/pages/DocumentPreview";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="/graph" element={<ProtectedRoute><Graph /></ProtectedRoute>} />
       <Route path="/shipments" element={<ProtectedRoute><Shipments /></ProtectedRoute>} />
       <Route path="/schedule" element={<ProtectedRoute><ScheduleCalendar /></ProtectedRoute>} />
+      <Route path="/preview" element={<ProtectedRoute><DocumentPreview /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
       <Route path="/api-keys" element={<ProtectedRoute><ApiKeys /></ProtectedRoute>} />
