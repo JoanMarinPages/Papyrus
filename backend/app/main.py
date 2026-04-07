@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import documents, dashboard, templates, graph, api_keys, analytics, settings
+from app.routers import documents, dashboard, templates, graph, api_keys, analytics, settings, rag
 
 app = FastAPI(
     title="Papyrus API",
@@ -28,6 +28,7 @@ app.include_router(graph.router, prefix="/api")
 app.include_router(api_keys.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(settings.router, prefix="/api")
+app.include_router(rag.router, prefix="/api")
 
 
 @app.get("/")
