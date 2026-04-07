@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     supabase_service_key: str = ""
     database_url: str = ""
 
+    # Neo4j
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "Android_papyrus_1"
+
     # RAG (future)
     anthropic_api_key: str = ""
     voyage_api_key: str = ""
