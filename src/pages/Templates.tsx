@@ -62,12 +62,17 @@ const ICON_MAP: Record<string, typeof Scale> = {
   Scale, Briefcase, ClipboardList, FileCode, Building2, FileText,
 }
 
-const INDUSTRY_COLORS: Record<string, { color: string; bg: string }> = {
+const DEFAULT_INDUSTRIES: Record<string, { color: string; bg: string }> = {
   Legal: { color: "text-chart-2", bg: "bg-chart-2/10" },
   Ventas: { color: "text-primary", bg: "bg-primary/10" },
   "Consultoría": { color: "text-chart-3", bg: "bg-chart-3/10" },
   "Tecnología": { color: "text-chart-4", bg: "bg-chart-4/10" },
   RRHH: { color: "text-chart-5", bg: "bg-chart-5/10" },
+  Seguros: { color: "text-blue-500", bg: "bg-blue-500/10" },
+  Salud: { color: "text-red-500", bg: "bg-red-500/10" },
+  Finanzas: { color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  Educacion: { color: "text-amber-500", bg: "bg-amber-500/10" },
+  Construccion: { color: "text-orange-500", bg: "bg-orange-500/10" },
   General: { color: "text-muted-foreground", bg: "bg-secondary" },
 }
 
@@ -150,6 +155,7 @@ const DEFAULT_TEMPLATES: Template[] = [
 
 export default function TemplatesPage() {
   const navigate = useNavigate()
+  const [industries, setIndustries] = useState(DEFAULT_INDUSTRIES)
   const [templates, setTemplates] = useState<Template[]>(DEFAULT_TEMPLATES)
   const [createOpen, setCreateOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
@@ -267,7 +273,7 @@ export default function TemplatesPage() {
   }
 
   const getIcon = (iconName: string) => ICON_MAP[iconName] || FileText
-  const getColors = (industry: string) => INDUSTRY_COLORS[industry] || INDUSTRY_COLORS.General
+  const getColors = (industry: string) => industries[industry] || industries.General
 
   return (
     <div className="min-h-screen bg-background">
@@ -386,11 +392,34 @@ export default function TemplatesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(INDUSTRY_COLORS).map((ind) => (
+                    {Object.keys(industries).map((ind) => (
                       <SelectItem key={ind} value={ind}>{ind}</SelectItem>
                     ))}
+                    <SelectItem value="__add_new__">+ Anadir nueva industria...</SelectItem>
                   </SelectContent>
                 </Select>
+                {formIndustry === "__add_new__" && (
+                  <Input
+                    placeholder="Nombre de la nueva industria"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) {
+                        const name = (e.target as HTMLInputElement).value.trim()
+                        setIndustries((prev) => ({ ...prev, [name]: { color: "text-primary", bg: "bg-primary/10" } }))
+                        setFormIndustry(name)
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value.trim()) {
+                        const name = e.target.value.trim()
+                        setIndustries((prev) => ({ ...prev, [name]: { color: "text-primary", bg: "bg-primary/10" } }))
+                        setFormIndustry(name)
+                      } else {
+                        setFormIndustry("General")
+                      }
+                    }}
+                  />
+                )}
               </div>
             </div>
 

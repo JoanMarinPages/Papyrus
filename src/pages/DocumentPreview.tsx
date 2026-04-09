@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ArrowLeft, Download, Printer, Send, Eye, FileText, Shield, BarChart3, Megaphone,
-  CheckCircle2,
+  CheckCircle2, PenLine,
 } from "lucide-react"
+import { SignaturePad } from "@/components/SignaturePad"
 import {
   CLIENTS, POLICIES, SUMMARIES, PROMOS,
   getClient, getClientPolicies, getClientSummary, getPolicyTypeLabel,
@@ -238,6 +239,8 @@ export default function DocumentPreviewPage() {
   const [selectedPolicy, setSelectedPolicy] = useState(params.get("policy") || "")
   const [selectedPromo, setSelectedPromo] = useState("promo1")
   const [sent, setSent] = useState(false)
+  const [showSignature, setShowSignature] = useState(false)
+  const [signatureData, setSignatureData] = useState<string | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
 
   const client = getClient(selectedClient)
@@ -345,6 +348,15 @@ export default function DocumentPreviewPage() {
                 PDF
               </Button>
               <Button
+                variant={signatureData ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowSignature(!showSignature)}
+              >
+                <PenLine className="h-4 w-4" />
+                {signatureData ? "Firmado ✓" : "Firmar"}
+              </Button>
+              <Button
                 size="sm"
                 className="gap-2"
                 onClick={handleSend}
@@ -387,8 +399,45 @@ export default function DocumentPreviewPage() {
               {selectedType === "publicidad" && currentPromo && (
                 <PromoDocument promo={currentPromo} />
               )}
+              {/* Signature on document */}
+              {signatureData && (
+                <div className="mt-6 border-t border-gray-200 pt-4">
+                  <p className="mb-2 text-xs text-gray-400">Firma digital:</p>
+                  <img src={signatureData} alt="Firma" className="h-20" />
+                  <p className="mt-1 text-[10px] text-gray-400">
+                    Firmado electronicamente el {new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* Signature Pad */}
+          {showSignature && !signatureData && (
+            <Card className="mt-4 border-primary/30 bg-card">
+              <CardContent className="p-6">
+                <SignaturePad
+                  onSave={(dataUrl) => {
+                    setSignatureData(dataUrl)
+                    setShowSignature(false)
+                  }}
+                  onCancel={() => setShowSignature(false)}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {signatureData && (
+            <div className="mt-2 flex items-center gap-2">
+              <Badge variant="outline" className="border-green-500/20 bg-green-500/10 text-green-500">
+                <CheckCircle2 className="mr-1 h-3 w-3" /> Documento firmado
+              </Badge>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground"
+                onClick={() => { setSignatureData(null); setShowSignature(true) }}>
+                Firmar de nuevo
+              </Button>
+            </div>
+          )}
         </div>
       </main>
     </div>
