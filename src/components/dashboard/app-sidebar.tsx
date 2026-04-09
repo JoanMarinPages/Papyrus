@@ -13,6 +13,7 @@ import {
   Package,
   CalendarDays,
   Paintbrush,
+  Zap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -64,6 +65,11 @@ const configNav = [
     title: "Disenador",
     href: "/designer",
     icon: Paintbrush,
+  },
+  {
+    title: "Reglas de Envio",
+    href: "/send-rules",
+    icon: Zap,
   },
   {
     title: "Analytics",

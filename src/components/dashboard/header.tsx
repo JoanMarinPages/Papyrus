@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { Bell, Search, HelpCircle, Plus } from "lucide-react"
+import { Bell, Search, HelpCircle, Plus, Upload, FileCode, Paintbrush } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/lib/auth"
@@ -56,11 +56,29 @@ export function Header({ title, description }: HeaderProps) {
           </kbd>
         </div>
 
-        {/* Actions */}
-        <Button size="sm" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nuevo Documento
-        </Button>
+        {/* New Document */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Documento
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem onClick={() => navigate("/upload")}>
+              <Upload className="mr-2 h-4 w-4" />
+              Subir archivo
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/templates")}>
+              <FileCode className="mr-2 h-4 w-4" />
+              Generar desde template
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/designer")}>
+              <Paintbrush className="mr-2 h-4 w-4" />
+              Disenar documento
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Button variant="ghost" size="icon" className="text-muted-foreground">
           <HelpCircle className="h-5 w-5" />

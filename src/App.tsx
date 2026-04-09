@@ -15,6 +15,7 @@ import Shipments from "@/pages/Shipments";
 import ScheduleCalendar from "@/pages/ScheduleCalendar";
 import DocumentPreview from "@/pages/DocumentPreview";
 import Designer from "@/pages/Designer";
+import SendRules from "@/pages/SendRules";
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
       <Route path="/preview" element={<ProtectedRoute><DocumentPreview /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="/designer" element={<ProtectedRoute><Designer /></ProtectedRoute>} />
+      <Route path="/send-rules" element={<ProtectedRoute><SendRules /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
       <Route path="/api-keys" element={<ProtectedRoute><ApiKeys /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
