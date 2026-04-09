@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8001/api";
 
 class ApiError extends Error {
   constructor(
@@ -131,6 +131,31 @@ export const api = {
     }),
   getDatabaseStatus: () =>
     request<{ status: string; provider?: string }>("/settings/database/status"),
+
+  // RAG Pipeline
+  ragIngest: (path?: string) =>
+    request<RagIngestResult>("/rag/ingest", {
+      method: "POST",
+      body: JSON.stringify(path ? { path } : {}),
+    }),
+  ragQuery: (question: string) =>
+    request<RagQueryResult>("/rag/query", {
+      method: "POST",
+      body: JSON.stringify({ question }),
+    }),
+  ragGraph: (params?: { type?: string; search?: string; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") query.set(k, String(v));
+      });
+    }
+    const qs = query.toString();
+    return request<RagGraphData>(`/rag/graph${qs ? `?${qs}` : ""}`);
+  },
+  ragEntityDetail: (entityId: string) =>
+    request<RagEntityDetail>(`/rag/graph/${encodeURIComponent(entityId)}`),
+  ragStats: () => request<RagStats>("/rag/stats"),
 };
 
 // Types matching backend schemas
@@ -235,4 +260,57 @@ export interface RagSettingsOut {
   temperature: number;
   max_tokens: number;
   auto_citation: boolean;
+}
+
+// RAG types
+export interface RagIngestResult {
+  status: string;
+  storage: string;
+  documents_processed: number;
+  entities_extracted: number;
+  relationships_extracted: number;
+  graph_stats: { total_nodes: number; total_edges: number; types: Record<string, number> };
+}
+
+export interface RagQueryResult {
+  answer: string;
+  sources: { entity_id: string; label: string; type: string; relation: string }[];
+  confidence: number;
+  reasoning: string[];
+}
+
+export interface RagGraphNode {
+  id: string;
+  label: string;
+  type: string;
+  connections: number;
+  properties: Record<string, string>;
+}
+
+export interface RagGraphEdge {
+  source: string;
+  target: string;
+  relation: string;
+}
+
+export interface RagGraphData {
+  nodes: RagGraphNode[];
+  edges: RagGraphEdge[];
+  storage?: string;
+}
+
+export interface RagEntityDetail {
+  id: string;
+  label: string;
+  type: string;
+  properties: Record<string, string>;
+  neighbors: { id: string; label: string; type: string; relation: string }[];
+}
+
+export interface RagStats {
+  status: string;
+  documents: number;
+  entities: number;
+  relationships: number;
+  graph: { total_nodes: number; total_edges: number; types: Record<string, number> };
 }

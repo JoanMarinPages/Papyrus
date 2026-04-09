@@ -1,11 +1,11 @@
-
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -17,87 +17,176 @@ import {
   Search,
   ZoomIn,
   ZoomOut,
-  Maximize2,
-  Download,
   Filter,
   Network,
   FileText,
   Users,
   Building,
+  Loader2,
+  Send,
+  Sparkles,
+  AlertCircle,
+  RefreshCw,
+  Shield,
+  Car,
+  MapPin,
+  ShoppingBag,
 } from "lucide-react"
+import { api, type RagGraphNode, type RagGraphEdge, type RagQueryResult } from "@/lib/api"
 
-interface Node {
-  id: string
+interface CanvasNode extends RagGraphNode {
   x: number
   y: number
-  label: string
-  type: "document" | "entity" | "concept" | "person" | "organization"
-  connections: number
 }
 
-interface Edge {
-  from: string
-  to: string
-  label?: string
-}
-
-const nodes: Node[] = [
-  { id: "1", x: 400, y: 300, label: "Contratos", type: "concept", connections: 12 },
-  { id: "2", x: 600, y: 200, label: "Cliente ABC Corp", type: "organization", connections: 8 },
-  { id: "3", x: 200, y: 400, label: "Servicios IT", type: "concept", connections: 15 },
-  { id: "4", x: 500, y: 450, label: "Cumplimiento GDPR", type: "concept", connections: 6 },
-  { id: "5", x: 700, y: 350, label: "Facturación", type: "concept", connections: 9 },
-  { id: "6", x: 300, y: 200, label: "Propuesta Q2", type: "document", connections: 4 },
-  { id: "7", x: 600, y: 500, label: "Legal", type: "concept", connections: 11 },
-  { id: "8", x: 150, y: 300, label: "Política Privacidad", type: "document", connections: 5 },
-  { id: "9", x: 450, y: 150, label: "Juan Pérez", type: "person", connections: 7 },
-  { id: "10", x: 750, y: 250, label: "Proveedor XYZ", type: "organization", connections: 3 },
-  { id: "11", x: 350, y: 500, label: "Manual Técnico", type: "document", connections: 8 },
-  { id: "12", x: 550, y: 100, label: "Ventas", type: "concept", connections: 10 },
-]
-
-const edges: Edge[] = [
-  { from: "1", to: "2", label: "firmado_por" },
-  { from: "1", to: "3", label: "incluye" },
-  { from: "1", to: "4", label: "cumple" },
-  { from: "2", to: "5", label: "genera" },
-  { from: "4", to: "7", label: "relacionado" },
-  { from: "6", to: "1", label: "referencia" },
-  { from: "6", to: "2", label: "destinado_a" },
-  { from: "8", to: "3", label: "aplica_a" },
-  { from: "8", to: "4", label: "cumple" },
-  { from: "3", to: "7", label: "regulado_por" },
-  { from: "9", to: "2", label: "contacto_en" },
-  { from: "9", to: "6", label: "creó" },
-  { from: "10", to: "5", label: "factura_a" },
-  { from: "11", to: "3", label: "documenta" },
-  { from: "12", to: "6", label: "área" },
-  { from: "12", to: "2", label: "gestiona" },
-]
-
-const nodeColors: Record<string, { fill: string; stroke: string }> = {
+const NODE_COLORS: Record<string, { fill: string; stroke: string }> = {
   document: { fill: "rgba(45, 212, 191, 0.2)", stroke: "#2dd4bf" },
-  entity: { fill: "rgba(96, 165, 250, 0.2)", stroke: "#60a5fa" },
-  concept: { fill: "rgba(251, 191, 36, 0.2)", stroke: "#fbbf24" },
   person: { fill: "rgba(167, 139, 250, 0.2)", stroke: "#a78bfa" },
   organization: { fill: "rgba(251, 113, 133, 0.2)", stroke: "#fb7185" },
+  policy: { fill: "rgba(96, 165, 250, 0.2)", stroke: "#60a5fa" },
+  coverage: { fill: "rgba(251, 191, 36, 0.15)", stroke: "#fbbf24" },
+  vehicle: { fill: "rgba(74, 222, 128, 0.2)", stroke: "#4ade80" },
+  location: { fill: "rgba(251, 146, 60, 0.2)", stroke: "#fb923c" },
+  product: { fill: "rgba(232, 121, 249, 0.2)", stroke: "#e879f9" },
 }
 
-const stats = [
-  { label: "Nodos Totales", value: "3,542", icon: Network },
-  { label: "Documentos", value: "847", icon: FileText },
-  { label: "Personas", value: "234", icon: Users },
-  { label: "Organizaciones", value: "89", icon: Building },
-]
+const TYPE_ICONS: Record<string, typeof Network> = {
+  document: FileText,
+  person: Users,
+  organization: Building,
+  policy: Shield,
+  vehicle: Car,
+  location: MapPin,
+  product: ShoppingBag,
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  document: "Documentos",
+  person: "Personas",
+  organization: "Organizaciones",
+  policy: "Polizas",
+  coverage: "Coberturas",
+  vehicle: "Vehiculos",
+  location: "Ubicaciones",
+  product: "Productos",
+}
+
+function layoutNodes(nodes: RagGraphNode[], edges: RagGraphEdge[], width: number, height: number): CanvasNode[] {
+  // Simple force-directed-ish layout
+  const cx = width / 2
+  const cy = height / 2
+  const canvasNodes: CanvasNode[] = nodes.map((n, i) => {
+    const angle = (i / nodes.length) * Math.PI * 2
+    const typeIndex = Object.keys(NODE_COLORS).indexOf(n.type)
+    const radius = 120 + typeIndex * 60 + Math.random() * 40
+    return {
+      ...n,
+      x: cx + Math.cos(angle) * radius,
+      y: cy + Math.sin(angle) * radius,
+    }
+  })
+
+  // Simple repulsion iterations
+  for (let iter = 0; iter < 50; iter++) {
+    for (let i = 0; i < canvasNodes.length; i++) {
+      for (let j = i + 1; j < canvasNodes.length; j++) {
+        const dx = canvasNodes[j].x - canvasNodes[i].x
+        const dy = canvasNodes[j].y - canvasNodes[i].y
+        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1)
+        if (dist < 80) {
+          const force = (80 - dist) / dist * 0.5
+          canvasNodes[i].x -= dx * force
+          canvasNodes[i].y -= dy * force
+          canvasNodes[j].x += dx * force
+          canvasNodes[j].y += dy * force
+        }
+      }
+    }
+    // Pull edges closer
+    for (const edge of edges) {
+      const a = canvasNodes.find((n) => n.id === edge.source)
+      const b = canvasNodes.find((n) => n.id === edge.target)
+      if (a && b) {
+        const dx = b.x - a.x
+        const dy = b.y - a.y
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist > 150) {
+          const force = (dist - 150) / dist * 0.02
+          a.x += dx * force
+          a.y += dy * force
+          b.x -= dx * force
+          b.y -= dy * force
+        }
+      }
+    }
+  }
+
+  // Keep in bounds
+  const margin = 60
+  for (const n of canvasNodes) {
+    n.x = Math.max(margin, Math.min(width - margin, n.x))
+    n.y = Math.max(margin, Math.min(height - margin, n.y))
+  }
+
+  return canvasNodes
+}
 
 export default function GraphPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null)
+  const [nodes, setNodes] = useState<CanvasNode[]>([])
+  const [edges, setEdges] = useState<RagGraphEdge[]>([])
+  const [selectedNode, setSelectedNode] = useState<CanvasNode | null>(null)
+  const [neighbors, setNeighbors] = useState<{ id: string; label: string; type: string; relation: string }[]>([])
   const [zoom, setZoom] = useState(1)
+  const [typeFilter, setTypeFilter] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [stats, setStats] = useState<Record<string, number>>({})
+  const [totalEdges, setTotalEdges] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [storage, setStorage] = useState("")
+
+  // Query panel
+  const [question, setQuestion] = useState("")
+  const [queryResult, setQueryResult] = useState<RagQueryResult | null>(null)
+  const [querying, setQuerying] = useState(false)
+
+  const loadGraph = useCallback(async () => {
+    setLoading(true)
+    setError("")
+    try {
+      // Auto-ingest + load graph
+      const data = await api.ragGraph({
+        type: typeFilter !== "all" ? typeFilter : undefined,
+        search: searchTerm || undefined,
+        limit: 150,
+      })
+      const canvasNodes = layoutNodes(data.nodes, data.edges, 900, 600)
+      setNodes(canvasNodes)
+      setEdges(data.edges)
+      setStorage(data.storage || "")
+
+      // Load stats
+      const statsData = await api.ragStats()
+      if (statsData.graph) {
+        setStats(statsData.graph.types || {})
+        setTotalEdges(statsData.graph.total_edges || 0)
+      }
+    } catch (e: any) {
+      setError(e.message || "Error al conectar con el backend")
+    } finally {
+      setLoading(false)
+    }
+  }, [typeFilter, searchTerm])
 
   useEffect(() => {
+    loadGraph()
+  }, [loadGraph])
+
+  // Canvas rendering
+  useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || nodes.length === 0) return
 
     const ctx = canvas.getContext("2d")
     if (!ctx) return
@@ -106,113 +195,118 @@ export default function GraphPage() {
     canvas.width = rect.width * 2
     canvas.height = rect.height * 2
     ctx.scale(2 * zoom, 2 * zoom)
-
-    // Clear canvas
     ctx.clearRect(0, 0, rect.width / zoom, rect.height / zoom)
 
     // Draw edges
-    edges.forEach((edge) => {
-      const fromNode = nodes.find((n) => n.id === edge.from)
-      const toNode = nodes.find((n) => n.id === edge.to)
-      if (fromNode && toNode) {
+    for (const edge of edges) {
+      const from = nodes.find((n) => n.id === edge.source)
+      const to = nodes.find((n) => n.id === edge.target)
+      if (from && to) {
         ctx.beginPath()
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)"
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.12)"
         ctx.lineWidth = 1
-        ctx.moveTo(fromNode.x, fromNode.y)
-        ctx.lineTo(toNode.x, toNode.y)
+        ctx.moveTo(from.x, from.y)
+        ctx.lineTo(to.x, to.y)
         ctx.stroke()
-
-        // Draw edge label
-        if (edge.label) {
-          const midX = (fromNode.x + toNode.x) / 2
-          const midY = (fromNode.y + toNode.y) / 2
-          ctx.fillStyle = "rgba(255, 255, 255, 0.4)"
-          ctx.font = "8px sans-serif"
-          ctx.textAlign = "center"
-          ctx.fillText(edge.label, midX, midY)
-        }
       }
-    })
+    }
 
     // Draw nodes
-    nodes.forEach((node) => {
-      const colors = nodeColors[node.type] || nodeColors.entity
+    for (const node of nodes) {
+      const colors = NODE_COLORS[node.type] || NODE_COLORS.document
       const isSelected = selectedNode?.id === node.id
-      const radius = 28 + node.connections * 1.5
+      const radius = Math.max(20, 15 + node.connections * 3)
 
-      // Glow effect for selected node
       if (isSelected) {
         ctx.beginPath()
-        ctx.arc(node.x, node.y, radius + 10, 0, Math.PI * 2)
-        ctx.fillStyle = colors.stroke + "20"
+        ctx.arc(node.x, node.y, radius + 8, 0, Math.PI * 2)
+        ctx.fillStyle = colors.stroke + "30"
         ctx.fill()
       }
 
-      // Node circle
       ctx.beginPath()
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2)
       ctx.fillStyle = colors.fill
       ctx.fill()
       ctx.strokeStyle = colors.stroke
-      ctx.lineWidth = isSelected ? 3 : 2
+      ctx.lineWidth = isSelected ? 3 : 1.5
       ctx.stroke()
 
-      // Node label
       ctx.fillStyle = "#ffffff"
-      ctx.font = "11px sans-serif"
+      ctx.font = `${Math.max(9, 11 - nodes.length / 30)}px sans-serif`
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
 
-      const maxWidth = radius * 1.6
       let label = node.label
+      const maxWidth = radius * 1.6
       if (ctx.measureText(label).width > maxWidth) {
-        while (ctx.measureText(label + "...").width > maxWidth && label.length > 0) {
+        while (ctx.measureText(label + "..").width > maxWidth && label.length > 0) {
           label = label.slice(0, -1)
         }
-        label += "..."
+        label += ".."
       }
       ctx.fillText(label, node.x, node.y)
-    })
-  }, [selectedNode, zoom])
+    }
+  }, [nodes, edges, selectedNode, zoom])
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const rect = canvas.getBoundingClientRect()
     const x = (e.clientX - rect.left) / zoom
     const y = (e.clientY - rect.top) / zoom
 
-    const clickedNode = nodes.find((node) => {
-      const radius = 28 + node.connections * 1.5
-      const distance = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2)
-      return distance <= radius
+    const clicked = nodes.find((node) => {
+      const radius = Math.max(20, 15 + node.connections * 3)
+      return Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2) <= radius
     })
 
-    setSelectedNode(clickedNode || null)
+    setSelectedNode(clicked || null)
+    setNeighbors([])
+    if (clicked) {
+      api.ragEntityDetail(clicked.id).then((detail) => {
+        if (detail?.neighbors) setNeighbors(detail.neighbors)
+      }).catch(() => {})
+    }
   }
+
+  const handleQuery = async () => {
+    if (!question.trim()) return
+    setQuerying(true)
+    setQueryResult(null)
+    try {
+      const result = await api.ragQuery(question)
+      setQueryResult(result)
+    } catch (e: any) {
+      setQueryResult({ answer: "Error: " + (e.message || "sin conexion"), sources: [], confidence: 0, reasoning: [] })
+    } finally {
+      setQuerying(false)
+    }
+  }
+
+  const totalNodes = Object.values(stats).reduce((a, b) => a + b, 0)
 
   return (
     <div className="min-h-screen bg-background">
       <AppSidebar />
       <main className="pl-64">
-        <Header
-          title="Knowledge Graph"
-          description="Visualización del grafo de conocimiento"
-        />
+        <Header title="Knowledge Graph" description="Grafo de conocimiento con datos reales de AXA" />
         <div className="p-6">
           {/* Stats */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {stats.map((stat) => (
+            {[
+              { label: "Nodos Totales", value: totalNodes, icon: Network },
+              { label: "Polizas", value: stats.policy || 0, icon: Shield },
+              { label: "Personas", value: stats.person || 0, icon: Users },
+              { label: "Relaciones", value: totalEdges, icon: Building },
+            ].map((stat) => (
               <Card key={stat.label} className="border-border bg-card">
                 <CardContent className="flex items-center gap-4 p-4">
                   <div className="rounded-lg bg-primary/10 p-2">
                     <stat.icon className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {stat.value}
-                    </p>
+                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
                     <p className="text-sm text-muted-foreground">{stat.label}</p>
                   </div>
                 </CardContent>
@@ -220,181 +314,221 @@ export default function GraphPage() {
             ))}
           </div>
 
-          {/* Graph Controls */}
+          {/* Controls */}
           <Card className="mt-6 border-border bg-card">
             <CardContent className="p-4">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder="Buscar en el grafo..." className="pl-9" />
+                  <Input
+                    placeholder="Buscar entidades..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && loadGraph()}
+                  />
                 </div>
-                <Select defaultValue="all">
-                  <SelectTrigger className="w-40">
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-44">
                     <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Tipo" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="document">Documentos</SelectItem>
-                    <SelectItem value="person">Personas</SelectItem>
-                    <SelectItem value="organization">Organizaciones</SelectItem>
-                    <SelectItem value="concept">Conceptos</SelectItem>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    {Object.entries(TYPE_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label} ({stats[key] || 0})</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
-                  >
+                <div className="flex gap-1">
+                  <Button variant="outline" size="icon" onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}>
                     <ZoomOut className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
-                  >
+                  <Button variant="outline" size="icon" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}>
                     <ZoomIn className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon">
-                    <Maximize2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon">
-                    <Download className="h-4 w-4" />
+                  <Button variant="outline" size="icon" onClick={loadGraph}>
+                    <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
+                {storage && (
+                  <Badge variant="outline" className="text-xs">
+                    {storage === "neo4j" ? "Neo4j" : "In-Memory"}
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Graph Canvas */}
           <div className="mt-6 grid gap-6 lg:grid-cols-4">
+            {/* Graph Canvas */}
             <Card className="border-border bg-card lg:col-span-3">
               <CardContent className="p-0">
                 <div className="relative h-[600px] overflow-hidden rounded-lg bg-background">
-                  <canvas
-                    ref={canvasRef}
-                    className="h-full w-full cursor-pointer"
-                    style={{ width: "100%", height: "100%" }}
-                    onClick={handleCanvasClick}
-                  />
-
-                  {/* Legend */}
-                  <div className="absolute bottom-4 left-4 flex flex-wrap gap-3 rounded-lg bg-card/90 px-4 py-3 backdrop-blur">
-                    {Object.entries(nodeColors).map(([type, colors]) => (
-                      <div key={type} className="flex items-center gap-2">
-                        <div
-                          className="h-3 w-3 rounded-full border-2"
-                          style={{
-                            borderColor: colors.stroke,
-                            backgroundColor: colors.fill,
-                          }}
-                        />
-                        <span className="text-xs capitalize text-muted-foreground">
-                          {type === "document"
-                            ? "Documentos"
-                            : type === "concept"
-                              ? "Conceptos"
-                              : type === "person"
-                                ? "Personas"
-                                : type === "organization"
-                                  ? "Organizaciones"
-                                  : type}
-                        </span>
+                  {loading ? (
+                    <div className="flex h-full items-center justify-center gap-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <span className="text-muted-foreground">Cargando grafo...</span>
+                    </div>
+                  ) : error ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                      <AlertCircle className="h-8 w-8 text-destructive" />
+                      <p className="text-sm text-destructive">{error}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Asegurate de que el backend este corriendo en localhost:8001
+                      </p>
+                      <Button variant="outline" size="sm" onClick={loadGraph}>Reintentar</Button>
+                    </div>
+                  ) : (
+                    <>
+                      <canvas
+                        ref={canvasRef}
+                        className="h-full w-full cursor-pointer"
+                        style={{ width: "100%", height: "100%" }}
+                        onClick={handleCanvasClick}
+                      />
+                      {/* Legend */}
+                      <div className="absolute bottom-4 left-4 flex flex-wrap gap-2 rounded-lg bg-card/90 px-3 py-2 backdrop-blur">
+                        {Object.entries(NODE_COLORS).map(([type, colors]) => (
+                          <div key={type} className="flex items-center gap-1.5">
+                            <div className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: colors.stroke, backgroundColor: colors.fill }} />
+                            <span className="text-[10px] text-muted-foreground">{TYPE_LABELS[type] || type}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Zoom indicator */}
-                  <div className="absolute bottom-4 right-4 rounded-lg bg-card/90 px-3 py-1 text-sm text-muted-foreground backdrop-blur">
-                    Zoom: {Math.round(zoom * 100)}%
-                  </div>
+                      <div className="absolute bottom-4 right-4 rounded bg-card/90 px-2 py-1 text-xs text-muted-foreground backdrop-blur">
+                        {nodes.length} nodos | Zoom {Math.round(zoom * 100)}%
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Node Details */}
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle className="text-lg">Detalles del Nodo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedNode ? (
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Nombre</p>
-                      <p className="font-medium text-foreground">
-                        {selectedNode.label}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tipo</p>
-                      <Badge
-                        variant="outline"
-                        className="mt-1"
-                        style={{
-                          borderColor: nodeColors[selectedNode.type].stroke,
-                          color: nodeColors[selectedNode.type].stroke,
-                        }}
-                      >
-                        {selectedNode.type}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Conexiones</p>
-                      <p className="font-medium text-foreground">
-                        {selectedNode.connections} nodos relacionados
-                      </p>
-                    </div>
-                    <div className="border-t border-border pt-4">
-                      <p className="mb-2 text-sm text-muted-foreground">
-                        Relaciones
-                      </p>
-                      <div className="space-y-2">
-                        {edges
-                          .filter(
-                            (e) =>
-                              e.from === selectedNode.id ||
-                              e.to === selectedNode.id
-                          )
-                          .slice(0, 5)
-                          .map((edge, i) => {
-                            const otherNodeId =
-                              edge.from === selectedNode.id ? edge.to : edge.from
-                            const otherNode = nodes.find(
-                              (n) => n.id === otherNodeId
-                            )
-                            return (
-                              <div
-                                key={i}
-                                className="flex items-center gap-2 text-sm"
-                              >
-                                <span className="text-primary">→</span>
-                                <span className="text-muted-foreground">
-                                  {edge.label}
-                                </span>
-                                <span className="text-foreground">
-                                  {otherNode?.label}
-                                </span>
-                              </div>
-                            )
-                          })}
+            {/* Side panel */}
+            <div className="space-y-6">
+              {/* Node details */}
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Detalles del Nodo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedNode ? (
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Nombre</p>
+                        <p className="text-sm font-medium text-foreground">{selectedNode.label}</p>
                       </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Tipo</p>
+                        <Badge variant="outline" className="mt-0.5" style={{
+                          borderColor: NODE_COLORS[selectedNode.type]?.stroke,
+                          color: NODE_COLORS[selectedNode.type]?.stroke,
+                        }}>
+                          {TYPE_LABELS[selectedNode.type] || selectedNode.type}
+                        </Badge>
+                      </div>
+                      {Object.entries(selectedNode.properties || {}).filter(([, v]) => v).map(([k, v]) => (
+                        <div key={k}>
+                          <p className="text-xs text-muted-foreground capitalize">{k.replace(/_/g, " ")}</p>
+                          <p className="text-sm text-foreground">{v}</p>
+                        </div>
+                      ))}
+                      {neighbors.length > 0 && (
+                        <div className="border-t border-border pt-3">
+                          <p className="mb-2 text-xs text-muted-foreground">Relaciones ({neighbors.length})</p>
+                          <div className="max-h-40 space-y-1.5 overflow-y-auto">
+                            {neighbors.map((n, i) => (
+                              <div key={i} className="flex items-center gap-1.5 text-xs">
+                                <span className="text-primary">→</span>
+                                <span className="text-muted-foreground">{n.relation}</span>
+                                <span className="truncate font-medium text-foreground">{n.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <Button className="w-full" variant="secondary">
-                      Ver documentos relacionados
+                  ) : (
+                    <div className="py-6 text-center">
+                      <Network className="mx-auto h-8 w-8 text-muted-foreground/30" />
+                      <p className="mt-2 text-xs text-muted-foreground">Click en un nodo</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Query panel */}
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Consultar Grafo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Textarea
+                      placeholder="Ej: Que polizas tiene Garcia Martinez?"
+                      rows={2}
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleQuery() } }}
+                      className="resize-none text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={handleQuery}
+                      disabled={querying || !question.trim()}
+                    >
+                      {querying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      {querying ? "Consultando..." : "Consultar"}
                     </Button>
+
+                    {queryResult && (
+                      <div className="space-y-2 border-t border-border pt-3">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={
+                            queryResult.confidence >= 0.8 ? "border-green-500/20 bg-green-500/10 text-green-500" :
+                            queryResult.confidence >= 0.5 ? "border-yellow-500/20 bg-yellow-500/10 text-yellow-500" :
+                            "border-red-500/20 bg-red-500/10 text-red-500"
+                          }>
+                            {Math.round(queryResult.confidence * 100)}% confianza
+                          </Badge>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto whitespace-pre-wrap rounded-lg bg-secondary/30 p-3 text-xs leading-relaxed text-foreground">
+                          {queryResult.answer}
+                        </div>
+                        {queryResult.sources.length > 0 && (
+                          <div>
+                            <p className="mb-1 text-[10px] text-muted-foreground">Fuentes ({queryResult.sources.length})</p>
+                            <div className="flex flex-wrap gap-1">
+                              {queryResult.sources.slice(0, 5).map((s, i) => (
+                                <Badge key={i} variant="outline" className="text-[10px]">{s.label}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-muted-foreground">Prueba:</p>
+                      {["Polizas de Garcia Martinez", "Cuantas polizas de auto hay?", "Estadisticas del grafo"].map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => { setQuestion(q); }}
+                          className="block w-full rounded px-2 py-1 text-left text-[10px] text-primary hover:bg-secondary/50"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                ) : (
-                  <div className="py-8 text-center">
-                    <Network className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Haz clic en un nodo para ver sus detalles
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </main>
