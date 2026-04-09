@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -148,6 +149,7 @@ const DEFAULT_TEMPLATES: Template[] = [
 ]
 
 export default function TemplatesPage() {
+  const navigate = useNavigate()
   const [templates, setTemplates] = useState<Template[]>(DEFAULT_TEMPLATES)
   const [createOpen, setCreateOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
@@ -500,7 +502,7 @@ export default function TemplatesPage() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setGenerateOpen(false)}>Cerrar</Button>
-                <Button>Ver documento</Button>
+                <Button onClick={() => { setGenerateOpen(false); navigate("/preview?type=poliza") }}>Ver documento</Button>
               </div>
             </div>
           )}

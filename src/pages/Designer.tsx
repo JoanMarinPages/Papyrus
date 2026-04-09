@@ -25,6 +25,7 @@ import {
   ArrowRight,
   User,
   Bot,
+  Plus,
 } from "lucide-react"
 
 // --- Design config types ---
@@ -73,7 +74,7 @@ const HEADER_STYLES = {
   sidebar: "Lateral",
 }
 
-const PRESET_THEMES: { name: string; config: Partial<DesignConfig> }[] = [
+const INITIAL_THEMES: { name: string; config: Partial<DesignConfig> }[] = [
   {
     name: "Corporativo AXA",
     config: {
@@ -226,15 +227,15 @@ function processAICommand(input: string, current: DesignConfig): { response: str
 
   // Presets
   if (q.includes("corporativo") || q.includes("axa") || q.includes("seguros")) {
-    Object.assign(changes, PRESET_THEMES[0].config)
+    Object.assign(changes, INITIAL_THEMES[0].config)
     responses.push("Tema corporativo AXA aplicado")
   }
   if (q.includes("startup") || q.includes("fresco") || q.includes("joven")) {
-    Object.assign(changes, PRESET_THEMES[3].config)
+    Object.assign(changes, INITIAL_THEMES[3].config)
     responses.push("Tema fresco startup aplicado")
   }
   if (q.includes("legal") || q.includes("abogado") || q.includes("notaria")) {
-    Object.assign(changes, PRESET_THEMES[2].config)
+    Object.assign(changes, INITIAL_THEMES[2].config)
     responses.push("Tema legal elegante aplicado")
   }
 
@@ -402,15 +403,42 @@ function isLightColor(hex: string): boolean {
 // --- Main Page ---
 export default function DesignerPage() {
   const [config, setConfig] = useState<DesignConfig>(DEFAULT_CONFIG)
+  const [themes, setThemes] = useState(INITIAL_THEMES)
   const [chatInput, setChatInput] = useState("")
+  const [saved, setSaved] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "Hola! Soy tu asistente de diseno. Dime como quieres que sea el documento: colores, tipografia, layout... O elige un tema predefinido." },
   ])
   const [thinking, setThinking] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
 
   const updateConfig = (changes: Partial<DesignConfig>) => {
     setConfig((prev) => ({ ...prev, ...changes }))
+  }
+
+  const handlePrint = () => {
+    const content = previewRef.current
+    if (!content) return
+    const win = window.open("", "_blank")
+    if (!win) return
+    win.document.write(`<html><head><title>${config.documentTitle}</title><style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: system-ui, sans-serif; padding: 20px; }
+      table { border-collapse: collapse; width: 100%; }
+      td, th { padding: 8px 4px; }
+    </style></head><body>${content.innerHTML}</body></html>`)
+    win.document.close()
+    win.print()
+  }
+
+  const handleSaveTheme = () => {
+    const name = prompt("Nombre del tema:")
+    if (!name) return
+    const { companyName, logoUrl, documentTitle, subtitle, ...themeConfig } = config
+    setThemes((prev) => [...prev, { name, config: themeConfig }])
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   const handleSendMessage = () => {
@@ -456,20 +484,31 @@ export default function DesignerPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-2">
-                    {PRESET_THEMES.map((theme) => (
-                      <button
-                        key={theme.name}
-                        onClick={() => updateConfig(theme.config)}
-                        className="flex items-center gap-2 rounded-lg border border-border p-2.5 text-left text-xs transition-colors hover:border-primary/50 hover:bg-secondary/30"
-                      >
-                        <div className="flex gap-1">
-                          <div className="h-4 w-4 rounded" style={{ backgroundColor: theme.config.primaryColor }} />
-                          <div className="h-4 w-4 rounded" style={{ backgroundColor: theme.config.accentColor }} />
-                        </div>
-                        <span className="font-medium text-foreground">{theme.name}</span>
-                      </button>
+                    {themes.map((theme, i) => (
+                      <div key={theme.name + i} className="group relative">
+                        <button
+                          onClick={() => updateConfig(theme.config)}
+                          className="flex w-full items-center gap-2 rounded-lg border border-border p-2.5 text-left text-xs transition-colors hover:border-primary/50 hover:bg-secondary/30"
+                        >
+                          <div className="flex gap-1">
+                            <div className="h-4 w-4 rounded" style={{ backgroundColor: theme.config.primaryColor }} />
+                            <div className="h-4 w-4 rounded" style={{ backgroundColor: theme.config.accentColor }} />
+                          </div>
+                          <span className="truncate font-medium text-foreground">{theme.name}</span>
+                        </button>
+                        {i >= INITIAL_THEMES.length && (
+                          <button
+                            onClick={() => setThemes((prev) => prev.filter((_, idx) => idx !== i))}
+                            className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] text-white group-hover:flex"
+                          >✕</button>
+                        )}
+                      </div>
                     ))}
                   </div>
+                  <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5 text-xs" onClick={handleSaveTheme}>
+                    <Plus className="h-3 w-3" />
+                    Guardar tema actual
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -613,19 +652,19 @@ export default function DesignerPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm">Vista previa en vivo</CardTitle>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handlePrint}>
                         <Printer className="h-3 w-3" />
                         Imprimir
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleSaveTheme}>
                         <Download className="h-3 w-3" />
-                        Guardar template
+                        {saved ? "Guardado!" : "Guardar template"}
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-lg border border-border bg-gray-100 p-6 dark:bg-gray-900">
+                  <div ref={previewRef} className="rounded-lg border border-border bg-gray-100 p-6 dark:bg-gray-900">
                     <DocumentPreviewPanel config={config} />
                   </div>
 
