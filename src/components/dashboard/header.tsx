@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { Bell, Search, HelpCircle, Plus, Upload, FileCode, Paintbrush } from "lucide-react"
+import { Bell, Search, HelpCircle, Plus, Upload, FileCode, Paintbrush, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/lib/auth"
@@ -72,6 +72,10 @@ export function Header({ title, description }: HeaderProps) {
             <DropdownMenuItem onClick={() => navigate("/templates")}>
               <FileCode className="mr-2 h-4 w-4" />
               Generar desde template
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/batch")}>
+              <Package className="mr-2 h-4 w-4" />
+              Generar batch (Excel → PDF)
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/designer")}>
               <Paintbrush className="mr-2 h-4 w-4" />
