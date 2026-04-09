@@ -12,6 +12,7 @@ import {
   Building2,
   Package,
   CalendarDays,
+  Paintbrush,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -58,6 +59,11 @@ const configNav = [
     title: "Templates",
     href: "/templates",
     icon: FileCode,
+  },
+  {
+    title: "Disenador",
+    href: "/designer",
+    icon: Paintbrush,
   },
   {
     title: "Analytics",

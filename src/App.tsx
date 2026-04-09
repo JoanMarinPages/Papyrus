@@ -14,6 +14,7 @@ import Settings from "@/pages/Settings";
 import Shipments from "@/pages/Shipments";
 import ScheduleCalendar from "@/pages/ScheduleCalendar";
 import DocumentPreview from "@/pages/DocumentPreview";
+import Designer from "@/pages/Designer";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
       <Route path="/schedule" element={<ProtectedRoute><ScheduleCalendar /></ProtectedRoute>} />
       <Route path="/preview" element={<ProtectedRoute><DocumentPreview /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+      <Route path="/designer" element={<ProtectedRoute><Designer /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
       <Route path="/api-keys" element={<ProtectedRoute><ApiKeys /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
