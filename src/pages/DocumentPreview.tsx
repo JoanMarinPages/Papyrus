@@ -11,6 +11,7 @@ import {
   CheckCircle2, PenLine,
 } from "lucide-react"
 import { SignaturePad } from "@/components/SignaturePad"
+import { DocumentMarks, type MarksConfig } from "@/components/DocumentMarks"
 import {
   CLIENTS, POLICIES, SUMMARIES, PROMOS,
   getClient, getClientPolicies, getClientSummary, getPolicyTypeLabel,
@@ -241,6 +242,9 @@ export default function DocumentPreviewPage() {
   const [sent, setSent] = useState(false)
   const [showSignature, setShowSignature] = useState(false)
   const [signatureData, setSignatureData] = useState<string | null>(null)
+  const [marksConfig, setMarksConfig] = useState<MarksConfig>({
+    type: "none", position: "bottom", showPageNumber: true, showClientId: true, showBatchCode: true,
+  })
   const printRef = useRef<HTMLDivElement>(null)
 
   const client = getClient(selectedClient)
@@ -347,6 +351,18 @@ export default function DocumentPreviewPage() {
                 <Download className="h-4 w-4" />
                 PDF
               </Button>
+              <Select value={marksConfig.type} onValueChange={(v: any) => setMarksConfig((prev) => ({ ...prev, type: v }))}>
+                <SelectTrigger className="h-8 w-32 text-xs">
+                  <SelectValue placeholder="Marcas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin marcas</SelectItem>
+                  <SelectItem value="omr">OMR</SelectItem>
+                  <SelectItem value="barcode">Cod. barras</SelectItem>
+                  <SelectItem value="qr">QR</SelectItem>
+                  <SelectItem value="separator">Separador</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 variant={signatureData ? "default" : "outline"}
                 size="sm"
@@ -383,7 +399,20 @@ export default function DocumentPreviewPage() {
 
           {/* Document preview */}
           <Card className="mt-4 overflow-hidden border-border">
-            <CardContent className="p-8" ref={printRef}>
+            <CardContent className="relative p-8" ref={printRef}>
+              {/* Top marks */}
+              <DocumentMarks
+                config={marksConfig}
+                pageNumber={1}
+                totalPages={1}
+                isFirstPage={true}
+                isLastPage={true}
+                clientName={client?.name || "Cliente"}
+                clientId={selectedClient}
+                batchCode="BATCH-2026-0415"
+                documentId={currentPolicy?.policyNumber || "DOC-001"}
+              />
+
               {selectedType === "poliza" && currentPolicy && client && (
                 <PolicyDocument policy={currentPolicy} client={client} />
               )}

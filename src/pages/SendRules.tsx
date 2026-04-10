@@ -22,7 +22,7 @@ import {
 // --- Types ---
 interface RuleCondition {
   id: string
-  type: "cover_letter" | "signature" | "approval" | "grouping" | "delay" | "copies" | "format" | "watermark" | "custom"
+  type: "cover_letter" | "signature" | "approval" | "grouping" | "delay" | "copies" | "format" | "watermark" | "marks_omr" | "marks_barcode" | "marks_qr" | "marks_separator" | "custom"
   label: string
   value: string
   active: boolean
@@ -71,6 +71,10 @@ const CONDITION_TYPES: Record<string, { label: string; icon: typeof FileCheck; d
   copies: { label: "Copias adicionales", icon: Copy, description: "Enviar copias a otros destinatarios" },
   format: { label: "Formato obligatorio", icon: FileText, description: "Convertir a formato especifico (PDF)" },
   watermark: { label: "Marca de agua", icon: Eye, description: "Anadir marca de agua al documento" },
+  marks_omr: { label: "Marcas OMR", icon: FileText, description: "Marcas opticas para separacion en impresora" },
+  marks_barcode: { label: "Codigo de barras", icon: FileText, description: "Codigo de barras para identificar documento" },
+  marks_qr: { label: "Codigo QR", icon: FileText, description: "QR con metadata del documento y batch" },
+  marks_separator: { label: "Separador de corte", icon: FileText, description: "Linea de corte entre documentos" },
   delay: { label: "Retraso programado", icon: Clock, description: "Esperar X horas/dias antes de enviar" },
   custom: { label: "Condicion personalizada", icon: Zap, description: "Condicion definida por el usuario" },
 }
@@ -168,6 +172,22 @@ function parseNaturalLanguageRule(input: string): { rule: Partial<SendRule>; exp
   if (q.includes("marca de agua") || q.includes("watermark")) {
     conditions.push({ id: crypto.randomUUID(), type: "watermark", label: "Marca de agua", value: "Anadir marca de agua corporativa", active: true })
     explanations.push("Condicion: Con marca de agua")
+  }
+  if (q.includes("omr") || q.includes("marcas opticas") || q.includes("marca optica")) {
+    conditions.push({ id: crypto.randomUUID(), type: "marks_omr", label: "Marcas OMR", value: "Marcas opticas en margen izquierdo", active: true })
+    explanations.push("Condicion: Marcas OMR para separacion")
+  }
+  if (q.includes("codigo de barras") || q.includes("barcode") || q.includes("codbarras")) {
+    conditions.push({ id: crypto.randomUUID(), type: "marks_barcode", label: "Codigo de barras", value: "Code128 con ID documento", active: true })
+    explanations.push("Condicion: Codigo de barras")
+  }
+  if (q.includes("codigo qr") || q.includes("qr")) {
+    conditions.push({ id: crypto.randomUUID(), type: "marks_qr", label: "Codigo QR", value: "QR con metadata del batch", active: true })
+    explanations.push("Condicion: Codigo QR")
+  }
+  if (q.includes("separador") || q.includes("corte") || q.includes("cortar") || q.includes("separar paginas")) {
+    conditions.push({ id: crypto.randomUUID(), type: "marks_separator", label: "Separador de corte", value: "Linea de corte entre documentos", active: true })
+    explanations.push("Condicion: Separador de corte")
   }
   if (q.includes("esperar") || q.includes("retraso") || q.includes("delay") || q.includes("despues de")) {
     conditions.push({ id: crypto.randomUUID(), type: "delay", label: "Retraso", value: "Esperar 24h antes de enviar", active: true })
