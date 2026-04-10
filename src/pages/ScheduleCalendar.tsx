@@ -5,6 +5,7 @@ import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ChevronLeft,
@@ -22,6 +23,7 @@ import {
   BarChart3,
   Shield,
   Eye,
+  Search,
 } from "lucide-react"
 
 // --- Types ---
@@ -30,6 +32,9 @@ interface ScheduledDoc {
   name: string
   type: "poliza" | "resumen" | "publicidad"
   client: string
+  clientId: string
+  policyId?: string
+  promoId?: string
   clientEmail: string
   status: "scheduled" | "sent" | "printed" | "pending"
   printRequired: boolean
@@ -64,16 +69,16 @@ function generateWeekSchedule(weekStart: Date): DaySchedule[] {
     // Tuesday (2) and Thursday (4) = Polizas
     if (dayOfWeek === 2 || dayOfWeek === 4) {
       const polizas = [
-        { name: "Poliza Hogar - Garcia Martinez", client: CLIENTS[0].name, email: CLIENTS[0].email },
-        { name: "Poliza Auto - Garcia Martinez", client: CLIENTS[0].name, email: CLIENTS[0].email },
-        { name: "Poliza Vida - Lopez Fernandez", client: CLIENTS[1].name, email: CLIENTS[1].email },
-        { name: "Poliza Salud Familiar - Lopez Fernandez", client: CLIENTS[1].name, email: CLIENTS[1].email },
-        { name: "Poliza Hogar - Sanchez Ruiz", client: CLIENTS[2].name, email: CLIENTS[2].email },
-        { name: "Poliza Auto - Sanchez Ruiz", client: CLIENTS[2].name, email: CLIENTS[2].email },
-        { name: "Poliza Vida - Martinez Torres", client: CLIENTS[3].name, email: CLIENTS[3].email },
-        { name: "Poliza Hogar - Martinez Torres", client: CLIENTS[3].name, email: CLIENTS[3].email },
-        { name: "Poliza Comercio - Rodriguez Diaz", client: CLIENTS[4].name, email: CLIENTS[4].email },
-        { name: "Poliza Auto - Rodriguez Diaz", client: CLIENTS[4].name, email: CLIENTS[4].email },
+        { name: "Poliza Hogar - Garcia Martinez", client: CLIENTS[0].name, email: CLIENTS[0].email, clientId: "c1", policyId: "p1" },
+        { name: "Poliza Auto - Garcia Martinez", client: CLIENTS[0].name, email: CLIENTS[0].email, clientId: "c1", policyId: "p2" },
+        { name: "Poliza Vida - Lopez Fernandez", client: CLIENTS[1].name, email: CLIENTS[1].email, clientId: "c2", policyId: "p3" },
+        { name: "Poliza Salud Familiar - Lopez Fernandez", client: CLIENTS[1].name, email: CLIENTS[1].email, clientId: "c2", policyId: "p4" },
+        { name: "Poliza Hogar - Sanchez Ruiz", client: CLIENTS[2].name, email: CLIENTS[2].email, clientId: "c3", policyId: "p5" },
+        { name: "Poliza Auto - Sanchez Ruiz", client: CLIENTS[2].name, email: CLIENTS[2].email, clientId: "c3", policyId: "p6" },
+        { name: "Poliza Vida - Martinez Torres", client: CLIENTS[3].name, email: CLIENTS[3].email, clientId: "c4", policyId: "p7" },
+        { name: "Poliza Hogar - Martinez Torres", client: CLIENTS[3].name, email: CLIENTS[3].email, clientId: "c4", policyId: "p8" },
+        { name: "Poliza Comercio - Rodriguez Diaz", client: CLIENTS[4].name, email: CLIENTS[4].email, clientId: "c5", policyId: "p9" },
+        { name: "Poliza Auto - Rodriguez Diaz", client: CLIENTS[4].name, email: CLIENTS[4].email, clientId: "c5", policyId: "p10" },
       ]
 
       const subset = dayOfWeek === 2 ? polizas.slice(0, 5) : polizas.slice(5)
@@ -84,6 +89,8 @@ function generateWeekSchedule(weekStart: Date): DaySchedule[] {
           name: p.name,
           type: "poliza",
           client: p.client,
+          clientId: p.clientId,
+          policyId: p.policyId,
           clientEmail: p.email,
           status: isPast ? (idx % 3 === 0 ? "printed" : "sent") : "scheduled",
           printRequired: true,
@@ -96,11 +103,11 @@ function generateWeekSchedule(weekStart: Date): DaySchedule[] {
     // Friday (5) = Resumenes + Publicidad
     if (dayOfWeek === 5) {
       const fridayDocs = [
-        { name: "Resumen Anual - Garcia Martinez", type: "resumen" as const, client: CLIENTS[0].name, email: CLIENTS[0].email },
-        { name: "Resumen Anual - Lopez Fernandez", type: "resumen" as const, client: CLIENTS[1].name, email: CLIENTS[1].email },
-        { name: "Resumen Anual - Sanchez Ruiz", type: "resumen" as const, client: CLIENTS[2].name, email: CLIENTS[2].email },
-        { name: "Pack Familia AXA 2026", type: "publicidad" as const, client: "Todos los clientes", email: "masivo@axa.es" },
-        { name: "Seguro de Mascotas AXA", type: "publicidad" as const, client: "Todos los clientes", email: "masivo@axa.es" },
+        { name: "Resumen Anual - Garcia Martinez", type: "resumen" as const, client: CLIENTS[0].name, email: CLIENTS[0].email, clientId: "c1", promoId: undefined },
+        { name: "Resumen Anual - Lopez Fernandez", type: "resumen" as const, client: CLIENTS[1].name, email: CLIENTS[1].email, clientId: "c2", promoId: undefined },
+        { name: "Resumen Anual - Sanchez Ruiz", type: "resumen" as const, client: CLIENTS[2].name, email: CLIENTS[2].email, clientId: "c3", promoId: undefined },
+        { name: "Pack Familia AXA 2026", type: "publicidad" as const, client: "Todos los clientes", email: "masivo@axa.es", clientId: "c1", promoId: "promo1" },
+        { name: "Seguro de Mascotas AXA", type: "publicidad" as const, client: "Todos los clientes", email: "masivo@axa.es", clientId: "c1", promoId: "promo2" },
       ]
 
       fridayDocs.forEach((d, idx) => {
@@ -110,6 +117,8 @@ function generateWeekSchedule(weekStart: Date): DaySchedule[] {
           name: d.name,
           type: d.type,
           client: d.client,
+          clientId: d.clientId,
+          promoId: d.promoId,
           clientEmail: d.email,
           status: isPast ? "sent" : "scheduled",
           printRequired: d.type === "publicidad",
@@ -226,7 +235,7 @@ function DayColumn({ day }: { day: DaySchedule }) {
                     </div>
                   )}
                   <Link
-                    to={`/preview?type=${doc.type}`}
+                    to={`/preview?type=${doc.type}&client=${doc.clientId}${doc.policyId ? `&policy=${doc.policyId}` : ""}${doc.promoId ? `&promo=${doc.promoId}` : ""}`}
                     className="mt-1.5 flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -251,14 +260,19 @@ function DayColumn({ day }: { day: DaySchedule }) {
 export default function ScheduleCalendarPage() {
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()))
   const [clientFilter, setClientFilter] = useState("all")
+  const [searchTomador, setSearchTomador] = useState("")
 
   const weekDays = generateWeekSchedule(currentWeekStart)
 
   const filteredDays = weekDays.map((day) => ({
     ...day,
-    documents: clientFilter === "all"
-      ? day.documents
-      : day.documents.filter((d) => d.client === clientFilter || d.client === "Todos los clientes"),
+    documents: day.documents.filter((d) => {
+      // Client dropdown filter
+      if (clientFilter !== "all" && d.client !== clientFilter && d.client !== "Todos los clientes") return false
+      // Tomador search
+      if (searchTomador && !d.client.toLowerCase().includes(searchTomador.toLowerCase()) && !d.name.toLowerCase().includes(searchTomador.toLowerCase())) return false
+      return true
+    }),
   }))
 
   const totalScheduled = filteredDays.reduce((a, d) => a + d.documents.length, 0)
@@ -308,6 +322,15 @@ export default function ScheduleCalendarPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar tomador..."
+                  className="w-48 pl-9 text-sm"
+                  value={searchTomador}
+                  onChange={(e) => setSearchTomador(e.target.value)}
+                />
+              </div>
               <Select value={clientFilter} onValueChange={setClientFilter}>
                 <SelectTrigger className="w-56">
                   <User className="mr-2 h-4 w-4" />

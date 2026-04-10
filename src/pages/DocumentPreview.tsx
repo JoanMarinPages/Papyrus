@@ -238,7 +238,7 @@ export default function DocumentPreviewPage() {
   const [selectedClient, setSelectedClient] = useState(params.get("client") || "c1")
   const [selectedType, setSelectedType] = useState(params.get("type") || "poliza")
   const [selectedPolicy, setSelectedPolicy] = useState(params.get("policy") || "")
-  const [selectedPromo, setSelectedPromo] = useState("promo1")
+  const [selectedPromo, setSelectedPromo] = useState(params.get("promo") || "promo1")
   const [sent, setSent] = useState(false)
   const [showSignature, setShowSignature] = useState(false)
   const [signatureData, setSignatureData] = useState<string | null>(null)
