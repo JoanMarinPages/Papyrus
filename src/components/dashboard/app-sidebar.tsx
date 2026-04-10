@@ -14,6 +14,7 @@ import {
   CalendarDays,
   Paintbrush,
   Zap,
+  Cpu,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -52,6 +53,11 @@ const mainNav = [
     title: "Calendario",
     href: "/schedule",
     icon: CalendarDays,
+  },
+  {
+    title: "Procesamiento",
+    href: "/processing",
+    icon: Cpu,
   },
 ]
 
