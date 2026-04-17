@@ -15,6 +15,10 @@ import {
   Paintbrush,
   Zap,
   Cpu,
+  Mail,
+  GitBranch,
+  Layers,
+  Workflow as WorkflowIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -59,9 +63,29 @@ const mainNav = [
     href: "/processing",
     icon: Cpu,
   },
+  {
+    title: "Postproceso",
+    href: "/postprocessing",
+    icon: Mail,
+  },
 ]
 
 const configNav = [
+  {
+    title: "Tipos Documentales",
+    href: "/document-types",
+    icon: Layers,
+  },
+  {
+    title: "Perfiles de Proceso",
+    href: "/process-profiles",
+    icon: GitBranch,
+  },
+  {
+    title: "Workflows",
+    href: "/workflows",
+    icon: WorkflowIcon,
+  },
   {
     title: "Templates",
     href: "/templates",

@@ -15,6 +15,9 @@ import {
   CheckCircle2,
   Loader2,
   AlertCircle,
+  Network,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -125,6 +128,40 @@ export default function UploadPage() {
           description="Sube documentos para indexar en tu base de conocimiento"
         />
         <div className="p-6">
+          {/* How it works */}
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="p-5">
+              <p className="mb-3 text-sm font-semibold text-primary">
+                ¿Cómo funciona?
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 rounded-lg bg-background/60 px-3 py-2">
+                  <Upload className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">1. Sube documentos</p>
+                    <p className="text-[10px] text-muted-foreground">Contratos, informes, pólizas...</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-primary/50" />
+                <div className="flex items-center gap-2 rounded-lg bg-background/60 px-3 py-2">
+                  <Network className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">2. Se indexan con RAG</p>
+                    <p className="text-[10px] text-muted-foreground">Se extraen entidades y relaciones</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-primary/50" />
+                <div className="flex items-center gap-2 rounded-lg bg-background/60 px-3 py-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">3. Genera nuevos docs</p>
+                    <p className="text-[10px] text-muted-foreground">Con IA basada en tu conocimiento</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Upload Zone */}
           <Card className="border-border bg-card">
             <CardContent className="p-6">
@@ -133,7 +170,7 @@ export default function UploadPage() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={cn(
-                  "relative flex min-h-[300px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all",
+                  "relative flex min-h-[260px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all",
                   isDragging
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/50 hover:bg-secondary/50"
@@ -153,9 +190,12 @@ export default function UploadPage() {
                   Arrastra archivos aquí o haz clic para seleccionar
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Soporta PDF, DOCX, TXT, XLSX, CSV, MD (máx. 50MB por archivo)
+                  Tus documentos se procesarán automáticamente para alimentar el Knowledge Graph
                 </p>
-                <div className="mt-4 flex gap-2">
+                <p className="mt-1 text-xs text-muted-foreground">
+                  PDF, DOCX, TXT, XLSX, CSV, MD (máx. 50MB por archivo)
+                </p>
+                <div className="mt-3 flex gap-2">
                   <Badge variant="secondary">PDF</Badge>
                   <Badge variant="secondary">DOCX</Badge>
                   <Badge variant="secondary">XLSX</Badge>
@@ -248,7 +288,7 @@ export default function UploadPage() {
                   <div>
                     <p className="text-2xl font-bold text-foreground">847</p>
                     <p className="text-sm text-muted-foreground">
-                      Documentos totales
+                      Documentos en tu base de conocimiento
                     </p>
                   </div>
                 </div>
@@ -263,7 +303,7 @@ export default function UploadPage() {
                   <div>
                     <p className="text-2xl font-bold text-foreground">3</p>
                     <p className="text-sm text-muted-foreground">
-                      En procesamiento
+                      Procesándose ahora mismo
                     </p>
                   </div>
                 </div>
@@ -273,12 +313,12 @@ export default function UploadPage() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
                   <div className="rounded-lg bg-chart-3/10 p-3">
-                    <CheckCircle2 className="h-6 w-6 text-chart-3" />
+                    <Network className="h-6 w-6 text-chart-3" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">12.4K</p>
                     <p className="text-sm text-muted-foreground">
-                      Chunks indexados
+                      Fragmentos listos para consultar con IA
                     </p>
                   </div>
                 </div>

@@ -16,8 +16,12 @@ import {
   Plus, Trash2, Clock, Mail, Printer, Calendar, FileText,
   Shield, BarChart3, Megaphone, CheckCircle2, Edit, Copy, Zap,
   Send, Bot, User, Loader2, Sparkles, AlertTriangle, FileCheck,
-  Users, Package, Stamp, PenLine, Eye,
+  Users, Package, Stamp, PenLine, Eye, MapPin, Filter, Globe,
 } from "lucide-react"
+import { InfoTooltip } from "@/components/ui/info-tooltip"
+import { DEFAULT_PROCESS_PROFILES, PROFILE_COLOR_CLASSES } from "@/lib/process-profiles"
+import { SPANISH_CITIES, SPANISH_REGIONS } from "@/lib/mock-data-extended"
+import type { AudienceFilter, LanguageCode } from "@/lib/types"
 
 // --- Types ---
 interface RuleCondition {
@@ -46,6 +50,8 @@ interface SendRule {
   docsAffected: number
   source: "manual" | "natural"
   originalPrompt?: string
+  audienceFilter?: AudienceFilter
+  processProfileId?: string
 }
 
 // --- Constants ---
@@ -86,6 +92,99 @@ function parseNaturalLanguageRule(input: string): { rule: Partial<SendRule>; exp
   const q = input.toLowerCase()
   const rule: Partial<SendRule> = { conditions: [], channels: [] }
   const explanations: string[] = []
+  const audienceFilter: AudienceFilter = {}
+
+  // --- Geographic filters ---
+  const detectedCities: string[] = []
+  for (const city of SPANISH_CITIES) {
+    const needle = city.toLowerCase()
+    if (q.includes(`en ${needle}`) || q.includes(`de ${needle}`) || q.includes(`viven en ${needle}`) || q.includes(`residen en ${needle}`)) {
+      detectedCities.push(city)
+    }
+  }
+  if (detectedCities.length > 0) {
+    audienceFilter.geographic = { ...audienceFilter.geographic, cities: detectedCities }
+    explanations.push(`Ciudad: ${detectedCities.join(", ")}`)
+  }
+
+  const detectedRegions: string[] = []
+  for (const region of SPANISH_REGIONS) {
+    const needle = region.toLowerCase()
+    if (q.includes(needle)) detectedRegions.push(region)
+  }
+  if (detectedRegions.length > 0) {
+    audienceFilter.geographic = { ...audienceFilter.geographic, regions: detectedRegions }
+    explanations.push(`Región: ${detectedRegions.join(", ")}`)
+  }
+
+  // Postal codes (CP 08xxx, CP 28001-28050, código postal 08001)
+  const cpPrefixMatch = q.match(/(?:cp|código postal|codigo postal)\s+(\d{1,5}(?:x+)?)/i)
+  if (cpPrefixMatch) {
+    audienceFilter.geographic = { ...audienceFilter.geographic, postalCodes: [cpPrefixMatch[1]] }
+    explanations.push(`Código postal: ${cpPrefixMatch[1]}`)
+  }
+
+  // --- Demographic filters ---
+  const ageMinMatch = q.match(/más de (\d+)\s*años/i) || q.match(/mayores de (\d+)/i)
+  if (ageMinMatch) {
+    audienceFilter.demographic = { ...audienceFilter.demographic, ageRange: { min: parseInt(ageMinMatch[1]) } }
+    explanations.push(`Edad mínima: ${ageMinMatch[1]} años`)
+  }
+  const ageMaxMatch = q.match(/menos de (\d+)\s*años/i) || q.match(/menores de (\d+)/i)
+  if (ageMaxMatch) {
+    audienceFilter.demographic = {
+      ...audienceFilter.demographic,
+      ageRange: { ...(audienceFilter.demographic?.ageRange || {}), max: parseInt(ageMaxMatch[1]) },
+    }
+    explanations.push(`Edad máxima: ${ageMaxMatch[1]} años`)
+  }
+
+  const policyTypes: string[] = []
+  if (q.includes("póliza de auto") || q.includes("poliza de auto") || q.includes("pólizas de auto") || q.includes("polizas de auto")) policyTypes.push("auto")
+  if (q.includes("póliza de hogar") || q.includes("poliza de hogar") || q.includes("pólizas de hogar") || q.includes("polizas de hogar")) policyTypes.push("hogar")
+  if (q.includes("póliza de vida") || q.includes("poliza de vida")) policyTypes.push("vida")
+  if (q.includes("póliza de salud") || q.includes("poliza de salud")) policyTypes.push("salud")
+  if (policyTypes.length > 0) {
+    audienceFilter.demographic = { ...audienceFilter.demographic, policyTypes }
+    explanations.push(`Tipo de póliza: ${policyTypes.join(", ")}`)
+  }
+
+  if (q.includes("con siniestros") || q.includes("que tuvieron siniestro")) {
+    audienceFilter.demographic = { ...audienceFilter.demographic, hasClaimsInLastYear: true }
+    explanations.push("Filtro: Con siniestros en el último año")
+  }
+
+  // --- Client segment ---
+  const segments: string[] = []
+  if (q.includes("premium") || q.includes("vip")) segments.push("premium")
+  if (q.includes("estándar") || q.includes("estandar") || q.includes("standard")) segments.push("standard")
+  if (q.includes("nuevo cliente") || q.includes("nuevos clientes")) segments.push("new")
+  if (segments.length > 0) {
+    audienceFilter.clientSegment = segments
+    explanations.push(`Segmento: ${segments.join(", ")}`)
+  }
+
+  // --- Language ---
+  const languages: LanguageCode[] = []
+  if (q.includes("en catalán") || q.includes("en catalan") || q.includes("en català")) languages.push("ca")
+  if (q.includes("en castellano") || q.includes("en español") || q.includes("en espanol")) languages.push("es")
+  if (q.includes("en euskera") || q.includes("en vasco")) languages.push("eu")
+  if (q.includes("en gallego") || q.includes("en galego")) languages.push("gl")
+  if (q.includes("en inglés") || q.includes("en ingles") || q.includes("in english")) languages.push("en")
+  if (languages.length > 0) {
+    audienceFilter.language = languages
+    explanations.push(`Idioma: ${languages.map((l) => l === "es" ? "Español" : l === "ca" ? "Català" : l === "eu" ? "Euskara" : l === "gl" ? "Galego" : "English").join(", ")}`)
+  }
+
+  // --- Process profile ---
+  if (q.includes("urgente") || q.includes("inmediato")) { rule.processProfileId = "profile-urgent"; explanations.push("Perfil: Urgente") }
+  else if (q.includes("campaña") || q.includes("campana") || q.includes("navidad") || q.includes("promocional")) { rule.processProfileId = "profile-campaign"; explanations.push("Perfil: Campaña") }
+  else if (q.includes("diario") || q.includes("cada día") || q.includes("cada dia")) { rule.processProfileId = "profile-daily"; explanations.push("Perfil: Diario") }
+
+  // Attach filter if any were detected
+  if (Object.keys(audienceFilter).length > 0) {
+    rule.audienceFilter = audienceFilter
+  }
 
   // Document type
   if (q.includes("poliza") || q.includes("póliza")) { rule.documentType = "poliza"; explanations.push("Tipo: Polizas") }
@@ -414,32 +513,117 @@ export default function SendRulesPage() {
                 </div>
 
                 {/* NL Preview */}
-                {nlPreview && (
-                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                    <p className="mb-2 text-xs font-medium text-primary">Regla interpretada:</p>
-                    <p className="mb-1 text-sm font-semibold text-foreground">{nlPreview.rule.name}</p>
-                    <pre className="mb-3 whitespace-pre-wrap text-xs text-muted-foreground">{nlPreview.explanation}</pre>
-                    {nlPreview.rule.conditions && nlPreview.rule.conditions.length > 0 && (
-                      <div className="mb-3 flex flex-wrap gap-1">
-                        {nlPreview.rule.conditions.map((c) => {
-                          const ct = CONDITION_TYPES[c.type]
-                          const Icon = ct?.icon || Zap
-                          return (
-                            <Badge key={c.id} variant="outline" className="gap-1 text-[10px]">
-                              <Icon className="h-3 w-3" />{c.label}
-                            </Badge>
-                          )
-                        })}
+                {nlPreview && (() => {
+                  const profile = nlPreview.rule.processProfileId
+                    ? DEFAULT_PROCESS_PROFILES.find((p) => p.id === nlPreview.rule.processProfileId)
+                    : null
+                  const profileColors = profile ? PROFILE_COLOR_CLASSES[profile.color] : null
+                  const filter = nlPreview.rule.audienceFilter
+                  // Rough estimation based on filters (mock logic)
+                  let estimate = 1200
+                  if (filter?.geographic?.cities?.length) estimate = Math.round(estimate * 0.15)
+                  if (filter?.geographic?.regions?.length) estimate = Math.round(estimate * 0.3)
+                  if (filter?.demographic?.policyTypes?.length) estimate = Math.round(estimate * 0.4)
+                  if (filter?.demographic?.ageRange) estimate = Math.round(estimate * 0.6)
+                  if (filter?.clientSegment?.length) estimate = Math.round(estimate * 0.25)
+                  if (filter?.language?.length) estimate = Math.round(estimate * 0.6)
+                  return (
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                      <p className="mb-2 text-xs font-medium text-primary">Regla interpretada:</p>
+                      <p className="mb-2 text-sm font-semibold text-foreground">{nlPreview.rule.name}</p>
+                      <pre className="mb-3 whitespace-pre-wrap text-xs text-muted-foreground">{nlPreview.explanation}</pre>
+
+                      {/* Audience filter badges */}
+                      {filter && Object.keys(filter).length > 0 && (
+                        <div className="mb-3">
+                          <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase text-primary">
+                            <Filter className="h-3 w-3" /> Filtros de audiencia
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {filter.geographic?.cities?.map((c) => (
+                              <Badge key={c} variant="outline" className="gap-1 border-blue-500/30 bg-blue-500/10 text-[10px] text-blue-500">
+                                <MapPin className="h-2.5 w-2.5" /> {c}
+                              </Badge>
+                            ))}
+                            {filter.geographic?.regions?.map((r) => (
+                              <Badge key={r} variant="outline" className="gap-1 border-blue-500/30 bg-blue-500/10 text-[10px] text-blue-500">
+                                <MapPin className="h-2.5 w-2.5" /> {r}
+                              </Badge>
+                            ))}
+                            {filter.geographic?.postalCodes?.map((cp) => (
+                              <Badge key={cp} variant="outline" className="gap-1 border-blue-500/30 bg-blue-500/10 font-mono text-[10px] text-blue-500">
+                                CP {cp}
+                              </Badge>
+                            ))}
+                            {filter.demographic?.policyTypes?.map((t) => (
+                              <Badge key={t} variant="outline" className="gap-1 border-purple-500/30 bg-purple-500/10 text-[10px] text-purple-500">
+                                <Shield className="h-2.5 w-2.5" /> {t}
+                              </Badge>
+                            ))}
+                            {filter.demographic?.ageRange?.min && (
+                              <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-[10px] text-purple-500">
+                                &gt;{filter.demographic.ageRange.min} años
+                              </Badge>
+                            )}
+                            {filter.demographic?.hasClaimsInLastYear && (
+                              <Badge variant="outline" className="border-red-500/30 bg-red-500/10 text-[10px] text-red-500">
+                                Con siniestros
+                              </Badge>
+                            )}
+                            {filter.clientSegment?.map((s) => (
+                              <Badge key={s} variant="outline" className="gap-1 border-yellow-500/30 bg-yellow-500/10 text-[10px] capitalize text-yellow-500">
+                                {s}
+                              </Badge>
+                            ))}
+                            {filter.language?.map((l) => (
+                              <Badge key={l} variant="outline" className="gap-1 border-green-500/30 bg-green-500/10 text-[10px] text-green-500">
+                                <Globe className="h-2.5 w-2.5" /> {l.toUpperCase()}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            <Users className="mr-1 inline h-3 w-3" />
+                            Esta regla afectará a <strong className="text-foreground">~{estimate}</strong> clientes
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Process profile badge */}
+                      {profile && profileColors && (
+                        <div className="mb-3 flex items-center gap-2">
+                          <span className="text-[10px] font-semibold uppercase text-primary">Perfil de proceso:</span>
+                          <Badge variant="outline" className={`gap-1 text-[10px] ${profileColors.badge}`}>
+                            <Zap className="h-2.5 w-2.5" /> {profile.name} · Prio {profile.priority}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {nlPreview.rule.conditions && nlPreview.rule.conditions.length > 0 && (
+                        <div className="mb-3">
+                          <p className="mb-1 text-[10px] font-semibold uppercase text-primary">Condiciones</p>
+                          <div className="flex flex-wrap gap-1">
+                            {nlPreview.rule.conditions.map((c) => {
+                              const ct = CONDITION_TYPES[c.type]
+                              const Icon = ct?.icon || Zap
+                              return (
+                                <Badge key={c.id} variant="outline" className="gap-1 text-[10px]">
+                                  <Icon className="h-3 w-3" />{c.label}
+                                </Badge>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={confirmNlRule} className="gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Confirmar y crear
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setNlPreview(null)}>Descartar</Button>
                       </div>
-                    )}
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={confirmNlRule} className="gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Confirmar y crear
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setNlPreview(null)}>Descartar</Button>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
               </div>
             </CardContent>
           </Card>

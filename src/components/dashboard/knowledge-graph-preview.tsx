@@ -1,5 +1,6 @@
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Maximize2 } from "lucide-react"
@@ -47,70 +48,162 @@ const nodeColors = {
   concept: { fill: "rgba(251, 191, 36, 0.2)", stroke: "#fbbf24" },
 }
 
+const NODE_RADIUS = 24
+
+function getNodeAtPosition(
+  mouseX: number,
+  mouseY: number,
+  canvas: HTMLCanvasElement
+): Node | null {
+  const rect = canvas.getBoundingClientRect()
+  const x = mouseX - rect.left
+  const y = mouseY - rect.top
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i]
+    const dx = x - node.x
+    const dy = y - node.y
+    if (dx * dx + dy * dy <= NODE_RADIUS * NODE_RADIUS) {
+      return node
+    }
+  }
+  return null
+}
+
 export function KnowledgeGraphPreview() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const navigate = useNavigate()
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null)
+  const [tooltip, setTooltip] = useState<{
+    x: number
+    y: number
+    label: string
+    type: string
+  } | null>(null)
+
+  const draw = useCallback(
+    (highlightId: string | null) => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+
+      const rect = canvas.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+      canvas.width = rect.width * 2
+      canvas.height = rect.height * 2
+      ctx.scale(2, 2)
+
+      ctx.clearRect(0, 0, rect.width, rect.height)
+
+      // Draw edges
+      edges.forEach((edge) => {
+        const fromNode = nodes.find((n) => n.id === edge.from)
+        const toNode = nodes.find((n) => n.id === edge.to)
+        if (fromNode && toNode) {
+          const isHighlighted =
+            highlightId === edge.from || highlightId === edge.to
+          ctx.beginPath()
+          ctx.moveTo(fromNode.x, fromNode.y)
+          ctx.lineTo(toNode.x, toNode.y)
+          ctx.strokeStyle = isHighlighted
+            ? "rgba(255, 255, 255, 0.35)"
+            : "rgba(255, 255, 255, 0.1)"
+          ctx.lineWidth = isHighlighted ? 2 : 1
+          ctx.stroke()
+        }
+      })
+
+      // Draw nodes
+      nodes.forEach((node) => {
+        const colors = nodeColors[node.type]
+        const isHovered = node.id === highlightId
+
+        ctx.beginPath()
+        ctx.arc(node.x, node.y, isHovered ? NODE_RADIUS + 4 : NODE_RADIUS, 0, Math.PI * 2)
+        ctx.fillStyle = isHovered
+          ? colors.stroke.replace(")", ", 0.35)").replace("rgb", "rgba")
+          : colors.fill
+        ctx.fill()
+        ctx.strokeStyle = colors.stroke
+        ctx.lineWidth = isHovered ? 3 : 2
+        ctx.stroke()
+
+        // Glow effect on hover
+        if (isHovered) {
+          ctx.beginPath()
+          ctx.arc(node.x, node.y, NODE_RADIUS + 8, 0, Math.PI * 2)
+          ctx.strokeStyle = colors.stroke.replace(")", ", 0.3)").replace("rgb", "rgba")
+          ctx.lineWidth = 1
+          ctx.stroke()
+        }
+
+        // Node label
+        ctx.fillStyle = "#ffffff"
+        ctx.font = isHovered ? "bold 11px sans-serif" : "10px sans-serif"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+
+        const maxWidth = 40
+        let label = node.label
+        if (ctx.measureText(label).width > maxWidth) {
+          while (
+            ctx.measureText(label + "...").width > maxWidth &&
+            label.length > 0
+          ) {
+            label = label.slice(0, -1)
+          }
+          label += "..."
+        }
+        ctx.fillText(label, node.x, node.y)
+      })
+    },
+    []
+  )
 
   useEffect(() => {
+    // Draw immediately
+    draw(hoveredNode)
+
+    // Also observe resize so canvas draws when container gets dimensions
     const canvas = canvasRef.current
     if (!canvas) return
-
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    // Set canvas size
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * 2
-    canvas.height = rect.height * 2
-    ctx.scale(2, 2)
-
-    // Clear canvas
-    ctx.clearRect(0, 0, rect.width, rect.height)
-
-    // Draw edges
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)"
-    ctx.lineWidth = 1
-    edges.forEach((edge) => {
-      const fromNode = nodes.find((n) => n.id === edge.from)
-      const toNode = nodes.find((n) => n.id === edge.to)
-      if (fromNode && toNode) {
-        ctx.beginPath()
-        ctx.moveTo(fromNode.x, fromNode.y)
-        ctx.lineTo(toNode.x, toNode.y)
-        ctx.stroke()
-      }
+    const observer = new ResizeObserver(() => {
+      draw(hoveredNode)
     })
+    observer.observe(canvas.parentElement!)
+    return () => observer.disconnect()
+  }, [draw, hoveredNode])
 
-    // Draw nodes
-    nodes.forEach((node) => {
-      const colors = nodeColors[node.type]
-      
-      // Node circle
-      ctx.beginPath()
-      ctx.arc(node.x, node.y, 24, 0, Math.PI * 2)
-      ctx.fillStyle = colors.fill
-      ctx.fill()
-      ctx.strokeStyle = colors.stroke
-      ctx.lineWidth = 2
-      ctx.stroke()
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const node = getNodeAtPosition(e.clientX, e.clientY, canvas)
+    if (node) {
+      setHoveredNode(node.id)
+      const rect = canvas.getBoundingClientRect()
+      setTooltip({
+        x: node.x,
+        y: node.y - NODE_RADIUS - 12,
+        label: node.label,
+        type: node.type === "document" ? "Documento" : node.type === "entity" ? "Entidad" : "Concepto",
+      })
+      canvas.style.cursor = "pointer"
+    } else {
+      setHoveredNode(null)
+      setTooltip(null)
+      canvas.style.cursor = "default"
+    }
+  }
 
-      // Node label
-      ctx.fillStyle = "#ffffff"
-      ctx.font = "10px sans-serif"
-      ctx.textAlign = "center"
-      ctx.textBaseline = "middle"
-      
-      // Truncate label if too long
-      const maxWidth = 40
-      let label = node.label
-      if (ctx.measureText(label).width > maxWidth) {
-        while (ctx.measureText(label + "...").width > maxWidth && label.length > 0) {
-          label = label.slice(0, -1)
-        }
-        label += "..."
-      }
-      ctx.fillText(label, node.x, node.y)
-    })
-  }, [])
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const node = getNodeAtPosition(e.clientX, e.clientY, canvas)
+    if (node) {
+      navigate(`/graph?node=${node.id}`)
+    }
+  }
 
   return (
     <Card className="border-border bg-card">
@@ -123,7 +216,12 @@ export function KnowledgeGraphPreview() {
             Vista previa del grafo de conocimiento
           </p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => navigate("/graph")}
+        >
           <Maximize2 className="h-4 w-4" />
           Expandir
         </Button>
@@ -134,8 +232,30 @@ export function KnowledgeGraphPreview() {
             ref={canvasRef}
             className="h-full w-full"
             style={{ width: "100%", height: "100%" }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => {
+              setHoveredNode(null)
+              setTooltip(null)
+              if (canvasRef.current) canvasRef.current.style.cursor = "default"
+            }}
+            onClick={handleClick}
           />
-          
+
+          {/* Tooltip */}
+          {tooltip && (
+            <div
+              className="pointer-events-none absolute z-10 rounded-md border border-border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md"
+              style={{
+                left: tooltip.x,
+                top: tooltip.y,
+                transform: "translate(-50%, -100%)",
+              }}
+            >
+              <span className="font-medium">{tooltip.label}</span>
+              <span className="ml-1 text-muted-foreground">({tooltip.type})</span>
+            </div>
+          )}
+
           {/* Legend */}
           <div className="absolute bottom-4 left-4 flex gap-4 rounded-lg bg-card/80 px-3 py-2 backdrop-blur">
             <div className="flex items-center gap-2">

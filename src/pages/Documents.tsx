@@ -1,5 +1,6 @@
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent } from "@/components/ui/card"
@@ -140,6 +141,7 @@ const statusStyles = {
 }
 
 export default function DocumentsPage() {
+  const navigate = useNavigate()
   const [selectedDocs, setSelectedDocs] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -270,7 +272,16 @@ export default function DocumentsPage() {
                     const status =
                       statusStyles[doc.status as keyof typeof statusStyles]
                     return (
-                      <TableRow key={doc.id}>
+                      <TableRow
+                        key={doc.id}
+                        className="cursor-pointer transition-colors hover:bg-secondary/30"
+                        onClick={(e) => {
+                          // Don't navigate if clicking checkbox or dropdown
+                          const target = e.target as HTMLElement
+                          if (target.closest("button, [role=checkbox], [role=menuitem]")) return
+                          navigate(`/preview?type=${doc.type.toLowerCase()}&id=${doc.id}`)
+                        }}
+                      >
                         <TableCell>
                           <Checkbox
                             checked={selectedDocs.includes(doc.id)}

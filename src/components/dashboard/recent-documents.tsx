@@ -1,4 +1,5 @@
 
+import { useNavigate } from "react-router-dom"
 import { FileText, MoreHorizontal, Clock, CheckCircle2, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -72,13 +73,15 @@ const statusConfig = {
 }
 
 export function RecentDocuments() {
+  const navigate = useNavigate()
+
   return (
     <Card className="border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <CardTitle className="text-lg font-semibold">
           Documentos Recientes
         </CardTitle>
-        <Button variant="ghost" size="sm" className="text-primary">
+        <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/documents")}>
           Ver todos
         </Button>
       </CardHeader>
@@ -90,7 +93,12 @@ export function RecentDocuments() {
             return (
               <div
                 key={doc.id}
-                className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-secondary/50"
+                className="flex cursor-pointer items-center justify-between px-6 py-4 transition-colors hover:bg-secondary/50 active:bg-secondary/60"
+                onClick={(e) => {
+                  const target = e.target as HTMLElement
+                  if (target.closest("button, [role=menuitem]")) return
+                  navigate(`/preview?type=${doc.type.toLowerCase()}&id=${doc.id}`)
+                }}
               >
                 <div className="flex items-center gap-4">
                   <div className="rounded-lg bg-secondary p-2">

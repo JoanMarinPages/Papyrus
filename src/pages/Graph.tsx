@@ -234,8 +234,72 @@ export default function GraphPage() {
         setStats(statsData.graph.types || {})
         setTotalEdges(statsData.graph.total_edges || 0)
       }
-    } catch (e: any) {
-      setError(e.message || "Error al conectar con el backend")
+    } catch {
+      // Fallback: show demo graph when backend is unavailable
+      const mockNodes: RagGraphNode[] = [
+        { id: "person:garcia-martinez", label: "Garcia Martinez", type: "person", connections: 5, properties: {} },
+        { id: "person:lopez-fernandez", label: "Lopez Fernandez", type: "person", connections: 3, properties: {} },
+        { id: "person:sanchez-ruiz", label: "Sanchez Ruiz", type: "person", connections: 4, properties: {} },
+        { id: "org:axa", label: "AXA Seguros", type: "organization", connections: 8, properties: {} },
+        { id: "org:mapfre", label: "MAPFRE", type: "organization", connections: 3, properties: {} },
+        { id: "policy:hogar-001", label: "Póliza Hogar #001", type: "policy", connections: 4, properties: {} },
+        { id: "policy:auto-002", label: "Póliza Auto #002", type: "policy", connections: 3, properties: {} },
+        { id: "policy:vida-003", label: "Póliza Vida #003", type: "policy", connections: 2, properties: {} },
+        { id: "policy:salud-004", label: "Póliza Salud #004", type: "policy", connections: 2, properties: {} },
+        { id: "coverage:rc", label: "Resp. Civil", type: "coverage", connections: 3, properties: {} },
+        { id: "coverage:robo", label: "Robo", type: "coverage", connections: 2, properties: {} },
+        { id: "coverage:incendio", label: "Incendio", type: "coverage", connections: 2, properties: {} },
+        { id: "vehicle:seat-leon", label: "Seat León 2023", type: "vehicle", connections: 2, properties: {} },
+        { id: "location:barcelona", label: "Barcelona", type: "location", connections: 5, properties: {} },
+        { id: "location:madrid", label: "Madrid", type: "location", connections: 3, properties: {} },
+        { id: "doc:contrato-001", label: "Contrato Servicios", type: "document", connections: 3, properties: {} },
+        { id: "doc:informe-002", label: "Informe Anual", type: "document", connections: 2, properties: {} },
+        { id: "product:pack-familia", label: "Pack Familia", type: "product", connections: 4, properties: {} },
+        { id: "product:pack-auto", label: "Pack Auto Plus", type: "product", connections: 3, properties: {} },
+      ]
+      const mockEdges: RagGraphEdge[] = [
+        { source: "person:garcia-martinez", target: "policy:hogar-001", relation: "titular" },
+        { source: "person:garcia-martinez", target: "policy:auto-002", relation: "titular" },
+        { source: "person:garcia-martinez", target: "location:barcelona", relation: "reside_en" },
+        { source: "person:lopez-fernandez", target: "policy:vida-003", relation: "titular" },
+        { source: "person:lopez-fernandez", target: "location:madrid", relation: "reside_en" },
+        { source: "person:sanchez-ruiz", target: "policy:salud-004", relation: "titular" },
+        { source: "person:sanchez-ruiz", target: "policy:auto-002", relation: "conductor" },
+        { source: "person:sanchez-ruiz", target: "location:barcelona", relation: "reside_en" },
+        { source: "org:axa", target: "policy:hogar-001", relation: "aseguradora" },
+        { source: "org:axa", target: "policy:auto-002", relation: "aseguradora" },
+        { source: "org:axa", target: "policy:vida-003", relation: "aseguradora" },
+        { source: "org:axa", target: "product:pack-familia", relation: "ofrece" },
+        { source: "org:axa", target: "product:pack-auto", relation: "ofrece" },
+        { source: "org:mapfre", target: "policy:salud-004", relation: "aseguradora" },
+        { source: "policy:hogar-001", target: "coverage:rc", relation: "incluye" },
+        { source: "policy:hogar-001", target: "coverage:robo", relation: "incluye" },
+        { source: "policy:hogar-001", target: "coverage:incendio", relation: "incluye" },
+        { source: "policy:auto-002", target: "coverage:rc", relation: "incluye" },
+        { source: "policy:auto-002", target: "vehicle:seat-leon", relation: "cubre" },
+        { source: "product:pack-familia", target: "policy:hogar-001", relation: "contiene" },
+        { source: "product:pack-familia", target: "policy:vida-003", relation: "contiene" },
+        { source: "product:pack-auto", target: "policy:auto-002", relation: "contiene" },
+        { source: "doc:contrato-001", target: "org:axa", relation: "con" },
+        { source: "doc:contrato-001", target: "person:garcia-martinez", relation: "firmado_por" },
+        { source: "doc:informe-002", target: "org:axa", relation: "emitido_por" },
+        { source: "location:barcelona", target: "org:axa", relation: "oficina" },
+      ]
+      const filtered = typeFilter !== "all"
+        ? mockNodes.filter((n) => n.type === typeFilter)
+        : searchTerm
+          ? mockNodes.filter((n) => n.label.toLowerCase().includes(searchTerm.toLowerCase()))
+          : mockNodes
+      const filteredIds = new Set(filtered.map((n) => n.id))
+      const filteredEdges = mockEdges.filter((e) => filteredIds.has(e.source) && filteredIds.has(e.target))
+      const laid = layoutNodes(filtered, filteredEdges)
+      nodesRef.current = laid
+      edgesRef.current = filteredEdges
+      setNodes(laid)
+      setEdges(filteredEdges)
+      setStorage("demo")
+      setStats({ person: 3, organization: 2, policy: 4, coverage: 3, vehicle: 1, location: 2, document: 2, product: 2 })
+      setTotalEdges(mockEdges.length)
     } finally {
       setLoading(false)
     }
@@ -345,9 +409,18 @@ export default function GraphPage() {
       if (idx >= 0) {
         const node = nodesRef.current[idx]
         setSelectedNode(node)
-        setNeighbors([])
+        // Build neighbors from local edges
+        const localNeighbors = edgesRef.current
+          .filter((e) => e.source === node.id || e.target === node.id)
+          .map((e) => {
+            const otherId = e.source === node.id ? e.target : e.source
+            const other = nodesRef.current.find((n) => n.id === otherId)
+            return { id: otherId, label: other?.label || otherId, type: other?.type || "unknown", relation: e.relation }
+          })
+        setNeighbors(localNeighbors)
+        // Try API for richer data, keep local fallback
         api.ragEntityDetail(node.id).then((d) => {
-          if (d?.neighbors) setNeighbors(d.neighbors)
+          if (d?.neighbors?.length) setNeighbors(d.neighbors)
         }).catch(() => {})
       } else {
         setSelectedNode(null)
@@ -391,8 +464,17 @@ export default function GraphPage() {
           scheduleRender()
         }
       }
-    } catch (e: any) {
-      setQueryResult({ answer: "Error: " + (e.message || "sin conexion"), sources: [], confidence: 0, reasoning: [] })
+    } catch {
+      // Demo response when backend unavailable
+      const q = question.toLowerCase()
+      const demoAnswer = q.includes("garcia")
+        ? "Garcia Martinez tiene 2 pólizas: Hogar #001 (con coberturas RC, Robo e Incendio) y Auto #002 (Seat León 2023). Ambas con AXA Seguros. Reside en Barcelona."
+        : q.includes("auto")
+          ? "Hay 1 póliza de auto: Auto #002, titular Garcia Martinez, conductor adicional Sanchez Ruiz. Cubre un Seat León 2023 con RC. Aseguradora: AXA."
+          : q.includes("axa")
+            ? "AXA Seguros tiene 3 pólizas activas (Hogar, Auto, Vida) y 2 productos (Pack Familia, Pack Auto Plus). Oficina en Barcelona."
+            : "Sin conexión al backend. El grafo muestra datos demo. Conecta el backend en localhost:8001 para consultas reales."
+      setQueryResult({ answer: demoAnswer, sources: [], confidence: 0.85, reasoning: ["Datos demo (backend no disponible)"] })
     } finally {
       setQuerying(false)
     }

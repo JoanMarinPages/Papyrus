@@ -18,6 +18,10 @@ import Designer from "@/pages/Designer";
 import SendRules from "@/pages/SendRules";
 import BatchGenerate from "@/pages/BatchGenerate";
 import ProcessingDetail from "@/pages/ProcessingDetail";
+import DocumentTypes from "@/pages/DocumentTypes";
+import ProcessProfiles from "@/pages/ProcessProfiles";
+import Workflows from "@/pages/Workflows";
+import Postprocessing from "@/pages/Postprocessing";
 
 export default function App() {
   return (
@@ -40,6 +44,10 @@ export default function App() {
       <Route path="/send-rules" element={<ProtectedRoute><SendRules /></ProtectedRoute>} />
       <Route path="/batch" element={<ProtectedRoute><BatchGenerate /></ProtectedRoute>} />
       <Route path="/processing" element={<ProtectedRoute><ProcessingDetail /></ProtectedRoute>} />
+      <Route path="/postprocessing" element={<ProtectedRoute><Postprocessing /></ProtectedRoute>} />
+      <Route path="/document-types" element={<ProtectedRoute><DocumentTypes /></ProtectedRoute>} />
+      <Route path="/process-profiles" element={<ProtectedRoute><ProcessProfiles /></ProtectedRoute>} />
+      <Route path="/workflows" element={<ProtectedRoute><Workflows /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
       <Route path="/api-keys" element={<ProtectedRoute><ApiKeys /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

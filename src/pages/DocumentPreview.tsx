@@ -347,7 +347,21 @@ export default function DocumentPreviewPage() {
                 <Printer className="h-4 w-4" />
                 Imprimir
               </Button>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                const content = printRef.current
+                if (!content) return
+                const win = window.open("", "_blank")
+                if (!win) return
+                win.document.write(`<html><head><title>Documento AXA - PDF</title><style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body { font-family: system-ui, sans-serif; padding: 40px; }
+                  table { border-collapse: collapse; width: 100%; }
+                  td, th { padding: 8px 4px; }
+                  @media print { body { padding: 20px; } }
+                </style></head><body>${content.innerHTML}</body></html>`)
+                win.document.close()
+                setTimeout(() => { win.print() }, 250)
+              }}>
                 <Download className="h-4 w-4" />
                 PDF
               </Button>
@@ -398,8 +412,8 @@ export default function DocumentPreviewPage() {
           </div>
 
           {/* Document preview */}
-          <Card className="mt-4 overflow-hidden border-border">
-            <CardContent className="relative p-8" ref={printRef}>
+          <Card className="mt-4 border-border">
+            <CardContent className="relative max-h-[calc(100vh-220px)] overflow-y-auto p-8" ref={printRef}>
               {/* Top marks */}
               <DocumentMarks
                 config={marksConfig}

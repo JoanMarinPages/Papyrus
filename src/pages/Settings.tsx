@@ -25,6 +25,9 @@ import {
   CreditCard,
   Users,
   Webhook,
+  FolderOpen,
+  HardDrive,
+  Info,
 } from "lucide-react"
 
 export default function SettingsPage() {
@@ -37,8 +40,12 @@ export default function SettingsPage() {
           description="Gestiona la configuración de tu workspace"
         />
         <div className="p-6">
-          <Tabs defaultValue="rag" className="space-y-6">
+          <Tabs defaultValue="storage" className="space-y-6">
             <TabsList className="bg-secondary">
+              <TabsTrigger value="storage" className="gap-2">
+                <FolderOpen className="h-4 w-4" />
+                Almacenamiento
+              </TabsTrigger>
               <TabsTrigger value="rag" className="gap-2">
                 <Brain className="h-4 w-4" />
                 Pipeline RAG
@@ -60,6 +67,172 @@ export default function SettingsPage() {
                 Facturación
               </TabsTrigger>
             </TabsList>
+
+            {/* Storage Settings */}
+            <TabsContent value="storage" className="space-y-6">
+              <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <p className="text-sm text-muted-foreground">
+                  Configura las rutas donde Papyrus almacena y busca archivos. Estos directorios se usan en todo el pipeline:
+                  desde la ingesta de documentos hasta la salida de documentos generados.
+                </p>
+              </div>
+
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <HardDrive className="h-5 w-5" />
+                    Rutas del Workspace
+                  </CardTitle>
+                  <CardDescription>
+                    Directorios principales para el procesamiento de documentos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <FolderOpen className="h-3.5 w-3.5 text-primary" />
+                      Documentos de Entrada (Inbox)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input defaultValue="/data/inbox" className="font-mono text-sm" />
+                      <Button variant="outline" size="sm">Explorar</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Carpeta donde se depositan los documentos nuevos para ser procesados por el pipeline RAG
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <FolderOpen className="h-3.5 w-3.5 text-chart-2" />
+                      Pool de Procesamiento
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input defaultValue="/data/processing" className="font-mono text-sm" />
+                      <Button variant="outline" size="sm">Explorar</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Directorio temporal donde los documentos se procesan (chunking, embedding, extracción de entidades)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <FolderOpen className="h-3.5 w-3.5 text-chart-3" />
+                      Documentos Indexados
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input defaultValue="/data/indexed" className="font-mono text-sm" />
+                      <Button variant="outline" size="sm">Explorar</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Almacén de documentos ya procesados e indexados en el Knowledge Graph
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <FolderOpen className="h-3.5 w-3.5 text-chart-4" />
+                      Templates
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input defaultValue="/data/templates" className="font-mono text-sm" />
+                      <Button variant="outline" size="sm">Explorar</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Plantillas para la generación de documentos (DOCX, HTML, etc.)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <FolderOpen className="h-3.5 w-3.5 text-chart-5" />
+                      Documentos Generados (Output)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input defaultValue="/data/output" className="font-mono text-sm" />
+                      <Button variant="outline" size="sm">Explorar</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Carpeta de salida donde se guardan los documentos generados por la IA
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                      Logs del Pipeline
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input defaultValue="/data/logs" className="font-mono text-sm" />
+                      <Button variant="outline" size="sm">Explorar</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Registros de ejecución del pipeline para auditoría y depuración
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle>Opciones de Almacenamiento</CardTitle>
+                  <CardDescription>
+                    Comportamiento del sistema de archivos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="font-medium">Auto-mover a Indexados</p>
+                      <p className="text-sm text-muted-foreground">
+                        Mover documentos del inbox a indexados tras procesarse correctamente
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="font-medium">Conservar originales</p>
+                      <p className="text-sm text-muted-foreground">
+                        Mantener una copia del documento original junto al indexado
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="font-medium">Vigilar Inbox (Hot Folder)</p>
+                      <p className="text-sm text-muted-foreground">
+                        Procesar automáticamente cualquier archivo nuevo que aparezca en el inbox
+                      </p>
+                    </div>
+                    <Switch />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Retención de logs (días)</Label>
+                    <div className="flex items-center gap-4">
+                      <Slider
+                        defaultValue={[90]}
+                        max={365}
+                        min={7}
+                        step={1}
+                        className="flex-1"
+                      />
+                      <span className="w-16 text-right text-sm text-muted-foreground">
+                        90 días
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end gap-3">
+                <Button variant="outline">Restablecer por defecto</Button>
+                <Button>Guardar cambios</Button>
+              </div>
+            </TabsContent>
 
             {/* RAG Pipeline Settings */}
             <TabsContent value="rag" className="space-y-6">

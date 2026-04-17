@@ -120,7 +120,11 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="space-y-3">
                   {recentDocs.map((doc) => (
-                    <div key={doc.id} className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-secondary/20">
+                    <div
+                      key={doc.id}
+                      className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30 active:bg-secondary/40"
+                      onClick={() => navigate(`/preview?type=${doc.type.toLowerCase()}&id=${doc.id}`)}
+                    >
                       <div className="rounded-lg bg-primary/10 p-2">
                         <FileText className="h-4 w-4 text-primary" />
                       </div>
@@ -145,8 +149,7 @@ export default function DashboardPage() {
                           <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Procesando</>
                         )}
                       </Badge>
-                      <Button variant="ghost" size="sm" className="text-xs"
-                        onClick={() => navigate("/preview?type=poliza")}>
+                      <Button variant="ghost" size="sm" className="text-xs">
                         Ver
                       </Button>
                     </div>
